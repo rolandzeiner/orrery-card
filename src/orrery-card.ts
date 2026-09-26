@@ -189,7 +189,7 @@ export class OrreryCard extends LitElement {
     const renderer = this._renderer;
     const probe = this._probe;
     if (!renderer || !probe) return;
-    const key = `${this._config.appearance}|${this._hassKey}`;
+    const key = `${this._config.appearance}|${this._config.colorTheme}|${this._hassKey}`;
     if (!force && key === this._paletteKey && renderer.hasPalette) return;
     const palette = readPalette(probe);
     if (!palette) {
@@ -486,7 +486,12 @@ export class OrreryCard extends LitElement {
     const dark = this._isDark();
     return html`
       <ha-card
-        class=${classMap({ space: c.appearance === "space", theme: c.appearance === "theme", dark })}
+        class=${classMap({
+          space: c.appearance === "space",
+          theme: c.appearance === "theme",
+          dark,
+          [`ct-${c.colorTheme}`]: true,
+        })}
       >
         <span class="probe" aria-hidden="true"></span>
         ${c.title ? html`<h2 class="title">${c.title}</h2>` : nothing}

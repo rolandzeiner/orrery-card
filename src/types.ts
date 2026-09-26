@@ -24,6 +24,8 @@ export interface LovelaceCardConfig {
 export type DistanceScale = "log" | "sqrt" | "true";
 export type OpeningView = "all" | "inner";
 export type Appearance = "space" | "theme";
+/** Colour scheme. `ha` takes the accents from the active HA theme. */
+export type ColorTheme = "vibe" | "ha" | "kenobi" | "spock";
 
 /** The YAML the user writes. Every key is optional. */
 export interface OrreryCardConfig extends LovelaceCardConfig {
@@ -36,6 +38,8 @@ export interface OrreryCardConfig extends LovelaceCardConfig {
   view?: OpeningView;
   /** `space` paints its own dark sky; `theme` follows the HA theme. */
   appearance?: Appearance;
+  /** Colour scheme for planets, the Sun and the controls. Default `vibe`. */
+  color_theme?: ColorTheme;
   show_controls?: boolean;
   show_date?: boolean;
   show_readouts?: boolean;
@@ -55,6 +59,7 @@ export interface ResolvedConfig {
   tilt: number;
   view: OpeningView;
   appearance: Appearance;
+  colorTheme: ColorTheme;
   showControls: boolean;
   showDate: boolean;
   showReadouts: boolean;

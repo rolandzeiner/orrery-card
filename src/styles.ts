@@ -96,6 +96,82 @@ export const cardStyles = css`
     color-scheme: dark;
   }
 
+  /* ── Colour themes ───────────────────────────────────────────────────
+     Layered over the appearance above: every theme sets the two accents;
+     in the space appearance it also sets the sky and the neutrals. Vibe is
+     the base, so it needs no rules of its own. Each theme's light-card
+     accents are darker, to keep small labels at 4.5:1 on white. The
+     --orrery-accent-color / --orrery-accent-2-color overrides still win. */
+
+  /* HA theme: the active theme's primary and accent colours, on Vibe's
+     sky. Placed after .theme.dark, which has the same specificity. */
+  ha-card.ct-ha.space,
+  ha-card.ct-ha.theme {
+    --orr-accent: var(--orrery-accent-color, var(--primary-color, #03a9f4));
+    --orr-accent-2: var(--orrery-accent-2-color, var(--accent-color, #ff9800));
+    --orr-on-accent: var(--text-primary-color, #fff);
+  }
+
+  /* Kenobi: black sky, crawl-yellow planets, a lightsaber-red Sun, and
+     pale gold type. */
+  ha-card.ct-kenobi.space {
+    --orr-sky-inner: #0c0c0e;
+    --orr-sky-outer: #000000;
+    --orr-star: #ffffff;
+    --orr-orbit: #8f8e96;
+    --orr-label: #8f8a73;
+    --orr-ink: #f4ebc4;
+    --orr-muted: #a29c84;
+    --orr-earth: #fff8cc;
+    --orr-moon: #e8e3cc;
+    --orr-plate: #050506;
+    --orr-raise: #151517;
+    --orr-line: #29292d;
+    --orr-accent: var(--orrery-accent-color, #ffe81f);
+    --orr-accent-2: var(--orrery-accent-2-color, #ff4b3a);
+    --orr-on-accent: #000000;
+    background: #050506;
+  }
+  ha-card.ct-kenobi.theme {
+    --orr-accent: var(--orrery-accent-color, #8a6a00);
+    --orr-accent-2: var(--orrery-accent-2-color, #c0392b);
+  }
+  ha-card.ct-kenobi.theme.dark {
+    --orr-accent: var(--orrery-accent-color, #ffe81f);
+    --orr-accent-2: var(--orrery-accent-2-color, #ff5a4a);
+    --orr-on-accent: #000000;
+  }
+
+  /* Spock: a starship console — black, with orange, lavender-blue and
+     peach panels. */
+  ha-card.ct-spock.space {
+    --orr-sky-inner: #080a1c;
+    --orr-sky-outer: #000000;
+    --orr-star: #e4e2ff;
+    --orr-orbit: #8b86b8;
+    --orr-label: #9c8fb6;
+    --orr-ink: #ffd9b0;
+    --orr-muted: #b3a5c8;
+    --orr-earth: #ffe3c2;
+    --orr-moon: #e9ddf2;
+    --orr-plate: #03040c;
+    --orr-raise: #14142a;
+    --orr-line: #2a2945;
+    --orr-accent: var(--orrery-accent-color, #ff9900);
+    --orr-accent-2: var(--orrery-accent-2-color, #9999ff);
+    --orr-on-accent: #000000;
+    background: #03040c;
+  }
+  ha-card.ct-spock.theme {
+    --orr-accent: var(--orrery-accent-color, #b35900);
+    --orr-accent-2: var(--orrery-accent-2-color, #5252c7);
+  }
+  ha-card.ct-spock.theme.dark {
+    --orr-accent: var(--orrery-accent-color, #ff9900);
+    --orr-accent-2: var(--orrery-accent-2-color, #9999ff);
+    --orr-on-accent: #000000;
+  }
+
   .title {
     margin: 0;
     padding: var(--orr-pad-y) var(--orr-pad-x) 0;

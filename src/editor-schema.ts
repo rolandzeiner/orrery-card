@@ -1,4 +1,4 @@
-import { SCALES, TILT_MAX, TILT_MIN } from "./config";
+import { COLOR_THEMES, SCALES, TILT_MAX, TILT_MIN } from "./config";
 import type { HaFormSchema } from "./types";
 
 const FLAG_FIELDS = [
@@ -21,9 +21,10 @@ export function buildSchema(t: (key: string) => string): ReadonlyArray<HaFormSch
   });
   return [
     { name: "title", selector: { text: {} } },
+    { type: "grid", name: "", schema: [select("color_theme", COLOR_THEMES), select("appearance", ["space", "theme"])] },
     select("scale", SCALES),
     { name: "tilt", selector: { number: { min: TILT_MIN, max: TILT_MAX, step: 0.5, mode: "slider" } } },
-    { type: "grid", name: "", schema: [select("view", ["all", "inner"]), select("appearance", ["space", "theme"])] },
+    select("view", ["all", "inner"]),
     {
       type: "expandable",
       name: "layers",

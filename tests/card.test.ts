@@ -263,6 +263,16 @@ describe("language and appearance", () => {
     expect($(card, ".title").textContent).toBe("Sky");
   });
 
+  it("applies the colour theme to the card", async () => {
+    const card = await mount({ color_theme: "spock" });
+    const haCard = $(card, "ha-card");
+    expect(haCard.classList.contains("ct-spock")).toBe(true);
+    card.setConfig({ type: "custom:orrery-card", color_theme: "kenobi" });
+    await card.updateComplete;
+    expect(haCard.classList.contains("ct-kenobi")).toBe(true);
+    expect(haCard.classList.contains("ct-spock")).toBe(false);
+  });
+
   it("survives being moved in the page", async () => {
     const card = await mount();
     card.remove();

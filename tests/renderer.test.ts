@@ -95,6 +95,17 @@ describe("OrreryRenderer.draw", () => {
     expect(hidden.fake.calls.some(([name]) => name === "drawImage")).toBe(false);
   });
 
+  it("moves a long tag under the time on a narrow card", () => {
+    const narrow = setup(300);
+    const playing = fmt.dateLine(T, { live: false, playing: true, speed: "decade", now: T });
+    narrow.renderer.draw({ ...frame(CAM), date: playing });
+    expect(narrow.fake.texts()).toContain("10 YEARS/S");
+
+    const wide = setup(900);
+    wide.renderer.draw({ ...frame(CAM), date: playing });
+    expect(wide.fake.texts()).toContain("  ·  10 YEARS/S");
+  });
+
   it("hides the corner readouts on a card too small for them", () => {
     const { fake, renderer } = setup(260);
     renderer.draw(frame(CAM));

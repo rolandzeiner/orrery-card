@@ -19,6 +19,11 @@ describe("resolveConfig", () => {
     expect(resolveConfig({ tilt: "3.5" }).tilt).toBe(3.5);
   });
 
+  it("accepts every colour theme, defaulting to Vibe", () => {
+    expect(resolveConfig({}).colorTheme).toBe("vibe");
+    for (const t of ["vibe", "ha", "kenobi", "spock"]) expect(resolveConfig({ color_theme: t }).colorTheme).toBe(t);
+  });
+
   it("trims the title", () => {
     expect(resolveConfig({ title: "  Sky  " }).title).toBe("Sky");
   });
@@ -27,6 +32,7 @@ describe("resolveConfig", () => {
     [{ scale: "cubic" }, /"scale" must be one of: log, sqrt, true/],
     [{ view: "outer" }, /"view" must be one of: all, inner/],
     [{ appearance: "neon" }, /"appearance" must be one of: space, theme/],
+    [{ color_theme: "vader" }, /"color_theme" must be one of: vibe, ha, kenobi, spock/],
     [{ tilt: 0 }, /"tilt" must be a number from 1 to 8/],
     [{ tilt: 12 }, /"tilt" must be a number from 1 to 8/],
     [{ tilt: "steep" }, /"tilt" must be a number from 1 to 8/],

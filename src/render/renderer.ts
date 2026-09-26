@@ -103,6 +103,9 @@ interface DateLayout {
   /** Baselines of the big date and the line under it. */
   y: number;
   y2: number;
+  /** Baseline of the tag: its own line when stacked, else y2. */
+  y3: number;
+  stacked: boolean;
   bigPx: number;
   subPx: number;
   tag: string;
@@ -363,10 +366,14 @@ export class OrreryRenderer {
     const tagW = tag ? ctx.measureText(tag).width : 0;
     this.spacing("0px");
 
-    const w = Math.max(bigW, subW + tagW);
+    // On a narrow card the time plus a long tag ("1 MONTH/S", "IN 75
+    // YEARS") would run into the corner readouts; give the tag its own line.
+    const stacked = tag !== "" && subW + tagW > S * 0.44;
+    const y3 = stacked ? y2 + subPx * 1.45 : y2;
+    const w = Math.max(bigW, stacked ? Math.max(subW, tagW) : subW + tagW);
     const top = y - bigPx * 0.78;
-    const bottom = y2 + subPx * 0.35;
-    return { y, y2, bigPx, subPx, tag, subW, box: { x: S / 2 - w / 2, y: top, w, h: bottom - top } };
+    const bottom = y3 + subPx * 0.35;
+    return { y, y2, y3, stacked, bigPx, subPx, tag, subW, box: { x: S / 2 - w / 2, y: top, w, h: bottom - top } };
   }
 
   /** A soft oval behind the date: the line-work under it is blurred, then
@@ -424,14 +431,20 @@ export class OrreryRenderer {
 
     ctx.font = this.font(500, layout.subPx);
     this.spacing("0.18em");
-    const tagW = layout.tag ? ctx.measureText(layout.tag).width : 0;
-    const x0 = cx - (layout.subW + tagW) / 2;
-    ctx.textAlign = "left";
-    ctx.fillStyle = pal.label;
-    ctx.fillText(date.sub, x0, layout.y2);
-    if (layout.tag) {
-      ctx.fillStyle = date.tagIsLive ? pal.accent : pal.accent2;
-      ctx.fillText(layout.tag, x0 + layout.subW, layout.y2);
+    const tagColor = date.tagIsLive ? pal.accent : pal.accent2;
+    if (layout.stacked) {
+      ctx.fillStyle = pal.label;
+      ctx.fillText(date.sub, cx, layout.y2);
+      ctx.fillStyle = tagColor;
+      ctx.fillText(date.tag, cx, layout.y3);
+    } else {
+      const tagW = layout.tag ? ctx.measureText(layout.tag).width : 0;
+      const x0 = cx - (layout.subW + tagW) / 2;
+      ctx.textAlign = "left";
+      ctx.fillStyle = pal.label;
+      ctx.fillText(date.sub, x0, layout.y2);
+      ctx.fillStyle = tagColor;
+      if (layout.tag) ctx.fillText(layout.tag, x0 + layout.subW, layout.y2);
     }
     this.spacing("0px");
   }

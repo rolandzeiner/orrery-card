@@ -18,7 +18,8 @@ It runs entirely in your browser. There's no integration to install and nothing 
 - **Time marks on every orbit.** Each tick is an equal step of time (10 days on Mercury, a year on Jupiter), so Mercury's uneven spacing shows it speeding up near the Sun. Earth's orbit is labelled with the months, and the current month is highlighted.
 - **Readouts in the corners:** Moon phase, the Sun–Earth distance, and how far away Mars and Jupiter are.
 - **Moon, asteroid belt, Saturn's ring.** The belt leaves the Kirkwood gaps open, and Saturn's ring is tilted at its real angle.
-- **Two looks.** *Space* is always dark, like a window onto the sky. *Follow the theme* draws onto your theme's card background, in light or dark mode.
+- **Four colour themes.** *Vibe* (cyan and violet), *HA theme* (your own theme's colours), and two fan palettes, *Kenobi* and *Spock*.
+- **Two backgrounds.** *Space* is always dark, like a window onto the sky. *Follow the theme* draws onto your theme's card background, in light or dark mode.
 - **Visual editor**, and English and German built in.
 - **Easy on wall tablets.** The card only redraws when something changes and pauses when it's off screen.
 
@@ -56,7 +57,8 @@ That's all it needs. Every option below is optional.
 | `scale` | `log` | How distances are drawn. `log` fits every planet on the card. `sqrt` compresses less. `true` is to scale, so you zoom in to see the inner planets. |
 | `tilt` | `1` | Orbit tilt, from `1` to `8`. At `1` the tilts are real, and they're small (7° at most). Higher values exaggerate them. |
 | `view` | `all` | Zoom the card opens at: `all` planets or the `inner` four. |
-| `appearance` | `space` | `space` is always dark. `theme` follows your dashboard theme. |
+| `color_theme` | `vibe` | Colours for the planets, the Sun and the controls: `vibe`, `ha`, `kenobi` or `spock`. See [Colour themes](#colour-themes). |
+| `appearance` | `space` | Background. `space` is always dark. `theme` draws on your dashboard theme's card background. |
 | `show_controls` | `true` | Time controls below the sky. |
 | `show_date` | `true` | The date in the lower part of the sky. |
 | `show_readouts` | `true` | The four readouts in the corners. Hidden automatically on cards narrower than 280 px. |
@@ -86,9 +88,22 @@ tilt: 4
 appearance: theme
 ```
 
+### Colour themes
+
+| Theme | Planets | Sun and selection | On the dark background |
+| --- | --- | --- | --- |
+| `vibe` | cyan | violet | deep navy sky |
+| `ha` | your theme's primary colour | your theme's accent colour | deep navy sky |
+| `kenobi` | bright yellow | red | black sky, pale gold text |
+| `spock` | orange | lavender blue | black sky, peach text |
+
+The colour theme and the background combine freely. With `appearance: theme` on a light dashboard, each theme switches to darker shades of its colours, so small text stays readable on white.
+
+*Kenobi* and *Spock* are fan-made colour schemes. They aren't affiliated with or endorsed by the owners of those characters.
+
 ### Theme variables
 
-Set these in a theme (or with card-mod) to restyle the card:
+Set these in a theme (or with card-mod) to override any colour theme:
 
 | Variable | Default | Used for |
 | --- | --- | --- |

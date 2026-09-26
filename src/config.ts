@@ -1,5 +1,6 @@
 import type {
   Appearance,
+  ColorTheme,
   DistanceScale,
   OpeningView,
   ResolvedConfig,
@@ -11,6 +12,7 @@ export const TILT_MAX = 8;
 export const SCALES: ReadonlyArray<DistanceScale> = ["log", "sqrt", "true"];
 export const VIEWS: ReadonlyArray<OpeningView> = ["all", "inner"];
 export const APPEARANCES: ReadonlyArray<Appearance> = ["space", "theme"];
+export const COLOR_THEMES: ReadonlyArray<ColorTheme> = ["vibe", "ha", "kenobi", "spock"];
 
 export const DEFAULTS: ResolvedConfig = {
   title: "",
@@ -18,6 +20,7 @@ export const DEFAULTS: ResolvedConfig = {
   tilt: 1,
   view: "all",
   appearance: "space",
+  colorTheme: "vibe",
   showControls: true,
   showDate: true,
   showReadouts: true,
@@ -71,6 +74,7 @@ export function resolveConfig(raw: unknown): ResolvedConfig {
     tilt: parseTilt(cfg.tilt),
     view: oneOf(cfg, "view", VIEWS, DEFAULTS.view),
     appearance: oneOf(cfg, "appearance", APPEARANCES, DEFAULTS.appearance),
+    colorTheme: oneOf(cfg, "color_theme", COLOR_THEMES, DEFAULTS.colorTheme),
     ...parseFlags(cfg),
   };
 }
@@ -111,6 +115,7 @@ export const YAML_DEFAULTS: Readonly<Record<string, string | number | boolean>> 
   tilt: DEFAULTS.tilt,
   view: DEFAULTS.view,
   appearance: DEFAULTS.appearance,
+  color_theme: DEFAULTS.colorTheme,
   ...Object.fromEntries(Object.entries(FLAGS).map(([yamlKey, key]) => [yamlKey, DEFAULTS[key]])),
 };
 
