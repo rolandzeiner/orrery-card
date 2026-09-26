@@ -18,6 +18,8 @@ export function fakeContext(): FakeContext {
       },
     }),
     measureText: (text: string) => ({ width: text.length * 6 }),
+    // Present, as in Chromium/Firefox/Safari 18+, so the date's blur runs.
+    filter: "none",
   };
   const ctx = new Proxy(state, {
     get(target, key) {
@@ -55,5 +57,7 @@ export const SAMPLE_PALETTE = {
   accent2Clear: "rgba(168, 120, 240, 0)",
   earthCore: "rgb(233, 251, 255)",
   moon: "rgb(221, 227, 242)",
+  plate: "rgb(11, 15, 27)",
+  plateClear: "rgba(11, 15, 27, 0)",
   font: "sans-serif",
 };

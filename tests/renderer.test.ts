@@ -84,6 +84,17 @@ describe("OrreryRenderer.draw", () => {
     expect(fake.texts()).toEqual([]);
   });
 
+  it("frosts the line-work behind the date, and only when the date is shown", () => {
+    const shown = setup();
+    shown.renderer.draw(frame({ az: 1.1, el: Math.PI / 2, zoom: 1 }));
+    expect(shown.fake.calls.some(([name]) => name === "drawImage")).toBe(true);
+    expect(shown.fake.calls.some(([name]) => name === "clip")).toBe(true);
+
+    const hidden = setup(480, { ...ALL_ON, showDate: false });
+    hidden.renderer.draw(frame({ az: 1.1, el: Math.PI / 2, zoom: 1 }));
+    expect(hidden.fake.calls.some(([name]) => name === "drawImage")).toBe(false);
+  });
+
   it("hides the corner readouts on a card too small for them", () => {
     const { fake, renderer } = setup(260);
     renderer.draw(frame(CAM));

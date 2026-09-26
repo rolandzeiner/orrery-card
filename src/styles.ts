@@ -56,6 +56,7 @@ export const cardStyles = css`
     --orr-muted: #8b94ad;
     --orr-earth: #e9fbff;
     --orr-moon: #dde3f2;
+    --orr-plate: #0b0f1b;
     --orr-raise: #111728;
     --orr-line: #222a3f;
     --orr-accent: var(--orrery-accent-color, #48c9e6);
@@ -80,6 +81,7 @@ export const cardStyles = css`
     --orr-muted: var(--secondary-text-color, #727272);
     --orr-earth: var(--orr-accent);
     --orr-moon: var(--secondary-text-color, #727272);
+    --orr-plate: var(--ha-card-background, var(--card-background-color, #fff));
     --orr-raise: var(--secondary-background-color, #f5f5f5);
     --orr-line: var(--divider-color, rgba(0, 0, 0, 0.12));
     --orr-accent: var(--orrery-accent-color, #0b7fa0);

@@ -99,6 +99,17 @@ interface TickGeometry {
   ny: number;
 }
 
+interface DateLayout {
+  /** Baselines of the big date and the line under it. */
+  y: number;
+  y2: number;
+  bigPx: number;
+  subPx: number;
+  tag: string;
+  subW: number;
+  box: Rect;
+}
+
 interface PlanetLabelItem extends LabelItem {
   text: string;
   depth: number;
@@ -159,6 +170,8 @@ export class OrreryRenderer {
   private sky: SkySnapshot | null = null;
   private sky0: CanvasGradient | null = null;
   private dotRadius = new Map<PlanetKey, number>();
+  /** The date's text box this frame, or null when the date is hidden. */
+  private dateBox: Rect | null = null;
   // Scratch buffers, reused every frame.
   private readonly w: Vec3 = [0, 0, 0];
   private readonly w2: Vec3 = [0, 0, 0];
@@ -246,10 +259,13 @@ export class OrreryRenderer {
     const proj = new Projector(frame.cam, S);
 
     this.drawBackground(proj, pal);
-    if (this.opts.showDate) this.drawDate(frame.date, pal);
     this.drawOrbits(proj, frame, pal);
     if (this.opts.showBelt) this.drawBelt(proj, frame.t, pal);
     this.drawSun(proj, frame.ts, pal);
+    // The date sits above the line-work (on a frosted plate, so it reads
+    // even when orbits and tick labels run through it, as they do from
+    // above) but below the planets, which stay the brightest thing.
+    this.dateBox = this.opts.showDate ? this.drawDate(frame.date, pal) : null;
 
     this.projectPlanets(proj, sky);
     if (this.opts.showTrails) this.drawTrails(frame, pal);
@@ -321,33 +337,101 @@ export class OrreryRenderer {
     ctx.globalAlpha = 1;
   }
 
-  private drawDate(date: DateLine, pal: Palette): void {
+  /** Draws the date and returns the box its text covers. */
+  private drawDate(date: DateLine, pal: Palette): Rect {
+    const layout = this.dateLayout(date);
+    this.drawDatePlate(layout, pal);
+    this.drawDateText(date, layout, pal);
+    return layout.box;
+  }
+
+  private dateLayout(date: DateLine): DateLayout {
     const ctx = this.ctx;
     const S = this.size;
-    const cx = S / 2;
+    const bigPx = Math.round(S * 0.078);
+    const subPx = Math.max(10, Math.round(S * 0.022));
     const y = S / 2 + S * 0.335;
+    const y2 = y + S * 0.045;
+    const tag = date.tag ? `  ·  ${date.tag}` : "";
+
+    ctx.font = this.font(300, bigPx);
+    this.spacing("0.02em");
+    const bigW = ctx.measureText(date.big).width;
+    ctx.font = this.font(500, subPx);
+    this.spacing("0.18em");
+    const subW = ctx.measureText(date.sub).width;
+    const tagW = tag ? ctx.measureText(tag).width : 0;
+    this.spacing("0px");
+
+    const w = Math.max(bigW, subW + tagW);
+    const top = y - bigPx * 0.78;
+    const bottom = y2 + subPx * 0.35;
+    return { y, y2, bigPx, subPx, tag, subW, box: { x: S / 2 - w / 2, y: top, w, h: bottom - top } };
+  }
+
+  /** A soft oval behind the date: the line-work under it is blurred, then
+   *  covered by a wash of the sky colour that fades to nothing at the rim,
+   *  so there is no visible edge. */
+  private drawDatePlate(layout: DateLayout, pal: Palette): void {
+    const ctx = this.ctx;
+    const S = this.size;
+    const { box } = layout;
+    const cx = box.x + box.w / 2;
+    const cy = box.y + box.h / 2;
+    const rx = box.w / 2 + S * 0.07;
+    const ry = box.h / 2 + S * 0.04;
+
+    // Blur first, clipped well inside the fade so its edge stays hidden
+    // under the plate. ctx.filter is Chromium, Firefox and Safari 18+;
+    // elsewhere the copy is skipped and the plate alone does the work.
+    if ("filter" in ctx) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, rx * 0.72, ry * 0.72, 0, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.filter = `blur(${Math.max(2, S * 0.006)}px)`;
+      const d = this.dpr;
+      ctx.drawImage(this.canvas, (cx - rx) * d, (cy - ry) * d, rx * 2 * d, ry * 2 * d, cx - rx, cy - ry, rx * 2, ry * 2);
+      ctx.restore();
+    }
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(rx, ry);
+    const wash = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    wash.addColorStop(0, pal.plate);
+    wash.addColorStop(0.6, pal.plate);
+    wash.addColorStop(1, pal.plateClear);
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = wash;
+    ctx.beginPath();
+    ctx.arc(0, 0, 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  private drawDateText(date: DateLine, layout: DateLayout, pal: Palette): void {
+    const ctx = this.ctx;
+    const cx = this.size / 2;
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.font = this.font(300, Math.round(S * 0.078));
+    ctx.font = this.font(300, layout.bigPx);
     this.spacing("0.02em");
     ctx.fillStyle = pal.ink;
-    ctx.globalAlpha = 0.92;
-    ctx.fillText(date.big, cx, y);
+    ctx.globalAlpha = 0.95;
+    ctx.fillText(date.big, cx, layout.y);
     ctx.globalAlpha = 1;
 
-    ctx.font = this.font(500, Math.max(10, Math.round(S * 0.022)));
+    ctx.font = this.font(500, layout.subPx);
     this.spacing("0.18em");
-    const tag = date.tag ? `  ·  ${date.tag}` : "";
-    const w1 = ctx.measureText(date.sub).width;
-    const w2 = tag ? ctx.measureText(tag).width : 0;
-    const x0 = cx - (w1 + w2) / 2;
-    const y2 = y + S * 0.045;
+    const tagW = layout.tag ? ctx.measureText(layout.tag).width : 0;
+    const x0 = cx - (layout.subW + tagW) / 2;
     ctx.textAlign = "left";
     ctx.fillStyle = pal.label;
-    ctx.fillText(date.sub, x0, y2);
-    if (tag) {
+    ctx.fillText(date.sub, x0, layout.y2);
+    if (layout.tag) {
       ctx.fillStyle = date.tagIsLive ? pal.accent : pal.accent2;
-      ctx.fillText(tag, x0 + w1, y2);
+      ctx.fillText(layout.tag, x0 + layout.subW, layout.y2);
     }
     this.spacing("0px");
   }
@@ -741,10 +825,11 @@ export class OrreryRenderer {
     this.spacing("0px");
   }
 
-  /** What planet names must not cover: the Sun and every planet dot. */
+  /** What planet names must not cover: the Sun, the date, every dot. */
   private labelObstacles(proj: Projector): Rect[] {
     const sunR = this.sunRadius(proj);
     const obstacles: Rect[] = [{ x: proj.cx - sunR, y: proj.cy - sunR, w: sunR * 2, h: sunR * 2 }];
+    if (this.dateBox) obstacles.push(this.dateBox);
     for (const [key, r] of this.dotRadius) {
       const s = this.screen.get(key);
       if (s) obstacles.push({ x: s[0] - r - 2, y: s[1] - r - 2, w: r * 2 + 4, h: r * 2 + 4 });

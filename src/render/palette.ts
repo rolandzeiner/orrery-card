@@ -20,6 +20,9 @@ export interface Palette {
   accent2Clear: string;
   earthCore: string;
   moon: string;
+  /** Wash behind the date, and the same at zero alpha for the fade. */
+  plate: string;
+  plateClear: string;
   font: string;
 }
 
@@ -34,6 +37,7 @@ const TOKENS = {
   accent2: "--orr-accent-2",
   earthCore: "--orr-earth",
   moon: "--orr-moon",
+  plate: "--orr-plate",
 } as const;
 
 const TRANSPARENT = /^(transparent|rgba\([^)]*,\s*0\))$/;
@@ -63,6 +67,7 @@ export function readPalette(probe: HTMLElement): Palette | null {
   };
   const accent = resolve(TOKENS.accent);
   const accent2 = resolve(TOKENS.accent2);
+  const plate = resolve(TOKENS.plate);
   const palette: Palette = {
     skyInner: optional(TOKENS.skyInner),
     skyOuter: optional(TOKENS.skyOuter),
@@ -76,10 +81,12 @@ export function readPalette(probe: HTMLElement): Palette | null {
     accent2Clear: fade(accent2, 0),
     earthCore: resolve(TOKENS.earthCore),
     moon: resolve(TOKENS.moon),
+    plate,
+    plateClear: fade(plate, 0),
     font: getComputedStyle(probe).fontFamily || "sans-serif",
   };
   probe.style.color = "";
-  const required = [palette.orbit, palette.label, palette.ink, palette.accent, palette.accent2, palette.earthCore, palette.moon];
+  const required = [palette.orbit, palette.label, palette.ink, palette.accent, palette.accent2, palette.earthCore, palette.moon, palette.plate];
   return required.every(Boolean) ? palette : null;
 }
 
