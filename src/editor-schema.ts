@@ -1,7 +1,7 @@
 import { SCALES, TILT_MAX, TILT_MIN } from "./config";
 import type { HaFormSchema } from "./types";
 
-export const FLAG_FIELDS = [
+const FLAG_FIELDS = [
   "show_controls",
   "show_date",
   "show_readouts",

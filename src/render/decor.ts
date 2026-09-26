@@ -2,7 +2,7 @@ import type { Vec3 } from "../astro/ephemeris";
 
 /** Deterministic PRNG (LCG), so the star field and belt look the same on
  *  every load and every card instance. */
-export function seeded(seed: number): () => number {
+function seeded(seed: number): () => number {
   let s = seed >>> 0;
   return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296;
 }
@@ -42,7 +42,7 @@ export interface Asteroid {
 
 /** Kirkwood gaps — orbits in 3:1, 5:2, 7:3 and 2:1 resonance with Jupiter,
  *  which Jupiter has cleared. The belt leaves them open. */
-export const KIRKWOOD_GAPS_AU: ReadonlyArray<number> = [2.5, 2.82, 2.95, 3.27];
+const KIRKWOOD_GAPS_AU: ReadonlyArray<number> = [2.5, 2.82, 2.95, 3.27];
 
 export function makeBelt(count: number, seed = 11): Asteroid[] {
   const rnd = seeded(seed);

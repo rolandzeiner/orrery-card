@@ -86,7 +86,7 @@ export function readPalette(probe: HTMLElement): Palette | null {
 /** A computed colour at a new alpha. Handles the two shapes
  *  getComputedStyle returns — `rgb(r, g, b)` / `rgba(r, g, b, a)` and
  *  `color(srgb r g b)` — and falls back to `transparent` otherwise. */
-export function fade(color: string, alpha: number): string {
+function fade(color: string, alpha: number): string {
   const rgb = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/.exec(color);
   if (rgb) return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${alpha})`;
   const srgb = /^color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(color);

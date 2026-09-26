@@ -23,7 +23,7 @@ export type Vec3 = [number, number, number];
 const J2000 = Date.UTC(2000, 0, 1, 12);
 const EQJ_TO_ECL = Rotation_EQJ_ECL();
 
-export function toEcliptic(v: Vector): Vec3 {
+function toEcliptic(v: Vector): Vec3 {
   const e = RotateVector(EQJ_TO_ECL, v);
   return [e.x, e.y, e.z];
 }
@@ -33,7 +33,7 @@ export function helio(body: Body, ms: number): Vec3 {
   return toEcliptic(HelioVector(body, new Date(ms)));
 }
 
-export const length = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
+const length = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
 
 function unit(v: Vec3): Vec3 {
   const l = length(v) || 1;
