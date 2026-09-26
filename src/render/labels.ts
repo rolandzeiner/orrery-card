@@ -58,11 +58,16 @@ export function candidates(item: LabelItem): Rect[] {
 export class LabelPlacer {
   private readonly previous = new Map<string, number>();
 
-  place(items: ReadonlyArray<LabelItem>, obstacles: ReadonlyArray<Rect>): Map<string, Rect> {
+  /** `bounds`, when given, is the drawable area: a spot that would stick
+   *  out of it counts as taken, so edge labels flip inwards. */
+  place(items: ReadonlyArray<LabelItem>, obstacles: ReadonlyArray<Rect>, bounds?: Rect): Map<string, Rect> {
     const taken: Rect[] = [...obstacles];
     const placed = new Map<string, Rect>();
+    const inside = (r: Rect): boolean =>
+      !bounds ||
+      (r.x >= bounds.x && r.y >= bounds.y && r.x + r.w <= bounds.x + bounds.w && r.y + r.h <= bounds.y + bounds.h);
     const free = (rect: Rect, margin: number): boolean =>
-      !taken.some((other) => overlaps(rect, other, margin));
+      inside(rect) && !taken.some((other) => overlaps(rect, other, margin));
 
     for (const item of items) {
       const spots = candidates(item);

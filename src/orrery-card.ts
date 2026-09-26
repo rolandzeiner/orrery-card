@@ -202,7 +202,12 @@ export class OrreryCard extends LitElement {
     }, LIVE_TICK_MS);
     document.addEventListener("visibilitychange", this._onVisibility);
     this._reducedMotion.addEventListener("change", this._onMotionPref);
-    if (this._renderer) this._observe();
+    if (this._renderer) {
+      this._observe();
+      // The theme may have changed while the card was detached, and a card
+      // moved before its first update never got a palette at all.
+      void this.updateComplete.then(() => this._refreshPalette(true));
+    }
   }
 
   override disconnectedCallback(): void {
@@ -241,17 +246,31 @@ export class OrreryCard extends LitElement {
 
   protected override updated(changed: PropertyValues<this>): void {
     if (changed.has("hass")) this._hassKey = this._hassFingerprint();
-    const paletteKey = `${this._config.appearance}|${this._hassKey}`;
-    if (this._renderer && this._probe && paletteKey !== this._paletteKey) {
-      this._paletteKey = paletteKey;
-      this._renderer.setPalette(readPalette(this._probe));
-      this._requestDraw();
-    }
+    this._refreshPalette(false);
     // The formatter depends on hass (language, zone, clock); swap it in.
     if (this._renderer && changed.has("hass")) {
       this._renderer.setTexts(this._fmt());
       this._requestDraw();
     }
+  }
+
+  /** Re-read the canvas colours when the appearance or theme changed, or
+   *  when an earlier read failed. The key is only stored on success, so a
+   *  read that happened while the card was detached is retried. */
+  private _refreshPalette(force: boolean): void {
+    const renderer = this._renderer;
+    const probe = this._probe;
+    if (!renderer || !probe) return;
+    const key = `${this._config.appearance}|${this._hassKey}`;
+    if (!force && key === this._paletteKey && renderer.hasPalette) return;
+    const palette = readPalette(probe);
+    if (!palette) {
+      this._paletteKey = "";
+      return;
+    }
+    this._paletteKey = key;
+    renderer.setPalette(palette);
+    this._requestDraw();
   }
 
   private _observe(): void {
@@ -261,6 +280,9 @@ export class OrreryCard extends LitElement {
     this._resizeObserver = new ResizeObserver((entries) => {
       const box = entries[0]?.contentRect;
       if (!box || !this._renderer) return;
+      // Being laid out means being in the document: a good moment to retry
+      // a palette read that failed earlier.
+      if (!this._renderer.hasPalette) this._refreshPalette(true);
       const size = Math.floor(fitSquare(box.width, box.height));
       if (size > 0 && Math.abs(size - this._renderer.cssSize) >= 1) {
         this._renderer.resize(size, window.devicePixelRatio);

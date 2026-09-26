@@ -38,7 +38,15 @@ const TOKENS = {
 
 const TRANSPARENT = /^(transparent|rgba\([^)]*,\s*0\))$/;
 
-export function readPalette(probe: HTMLElement): Palette {
+/** Reads the palette, or returns null when the styles aren't available.
+ *
+ *  A card that isn't in the document has no computed style: every colour
+ *  comes back as "". HA does this routinely — it connects a card and moves
+ *  it before Lit's first update runs — and an empty colour is silently
+ *  ignored by strokeStyle (so everything draws black) and throws in
+ *  addColorStop (so the frame stops halfway). Callers retry later. */
+export function readPalette(probe: HTMLElement): Palette | null {
+  if (!probe.isConnected) return null;
   const resolve = (token: string): string => {
     probe.style.color = `var(${token})`;
     return getComputedStyle(probe).color;
@@ -65,7 +73,8 @@ export function readPalette(probe: HTMLElement): Palette {
     font: getComputedStyle(probe).fontFamily || "sans-serif",
   };
   probe.style.color = "";
-  return palette;
+  const required = [palette.orbit, palette.label, palette.ink, palette.accent, palette.accent2, palette.earthCore, palette.moon];
+  return required.every(Boolean) ? palette : null;
 }
 
 /** A computed colour at a new alpha. Handles the two shapes

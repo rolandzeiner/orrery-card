@@ -131,6 +131,10 @@ export class OrreryRenderer {
     return this.size;
   }
 
+  get hasPalette(): boolean {
+    return this.palette !== null;
+  }
+
   resize(size: number, devicePixelRatio: number): void {
     // Cap the backing store: a 1200 px card at DPR 2 is 5.8 MP per frame.
     const dpr = Math.min(devicePixelRatio || 1, 2, 1800 / Math.max(size, 1));
@@ -652,7 +656,7 @@ export class OrreryRenderer {
       text.set(key, label);
       items.push({ id: key, x: s[0], y: s[1], r, w: ctx.measureText(label).width + 2, h: fs * 1.15 });
     }
-    const placed = this.labels.place(items, obstacles);
+    const placed = this.labels.place(items, obstacles, { x: 2, y: 2, w: S - 4, h: S - 4 });
 
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";

@@ -57,4 +57,13 @@ describe("LabelPlacer", () => {
     const placed = placer.place([a], [sun]).get("a");
     expect(placed).not.toEqual(sun);
   });
+
+  it("flips a label inwards at the edge of the card", () => {
+    const placer = new LabelPlacer();
+    const bounds = { x: 0, y: 0, w: 400, h: 400 };
+    const edge = item("uranus", 380, 200);
+    const rect = placer.place([edge], [], bounds).get("uranus")!;
+    expect(rect.x + rect.w).toBeLessThanOrEqual(400);
+    expect(rect.x).toBeLessThan(edge.x);
+  });
 });
