@@ -55,6 +55,28 @@ export function candidates(item: LabelItem): Rect[] {
   ];
 }
 
+/** Which candidate spot a label takes, given the spot it had last frame.
+ *  `isFree(i, margin)` says whether spot i is clear by `margin` px.
+ *
+ *  - A label away from its preferred spot (0) goes back once 0 is clear
+ *    by RETURN_MARGIN.
+ *  - Otherwise it keeps last frame's spot while that spot is free.
+ *  - Otherwise it takes the first free spot. Spot 0 needs the margin here
+ *    too, or a label pushed out of it would land back on a borderline
+ *    spot 0 and leave again next frame.
+ *  - With nothing free it stays put (or takes 0 on its first frame). */
+export function chooseSpot(count: number, prev: number | undefined, isFree: (i: number, margin: number) => boolean): number {
+  if (prev === undefined) return firstFree(count, isFree, 0) ?? 0;
+  if (prev !== 0 && isFree(0, RETURN_MARGIN)) return 0;
+  if (isFree(prev, 0)) return prev;
+  return firstFree(count, isFree, RETURN_MARGIN) ?? prev;
+}
+
+function firstFree(count: number, isFree: (i: number, margin: number) => boolean, marginForZero: number): number | undefined {
+  for (let i = 0; i < count; i++) if (isFree(i, i === 0 ? marginForZero : 0)) return i;
+  return undefined;
+}
+
 export class LabelPlacer {
   private readonly previous = new Map<string, number>();
 
@@ -72,26 +94,7 @@ export class LabelPlacer {
     for (const item of items) {
       const spots = candidates(item);
       const prev = this.previous.get(item.id);
-      let chosen = -1;
-
-      if (prev !== undefined && prev !== 0 && free(spots[0]!, RETURN_MARGIN)) {
-        chosen = 0;
-      } else if (prev !== undefined && free(spots[prev]!, 0)) {
-        chosen = prev;
-      } else {
-        for (let i = 0; i < spots.length; i++) {
-          // Guard the preferred spot with the same margin here, or a label
-          // pushed out of spot 1 would land back on a borderline spot 0 and
-          // leave it again next frame.
-          const margin = i === 0 && prev !== undefined ? RETURN_MARGIN : 0;
-          if (free(spots[i]!, margin)) {
-            chosen = i;
-            break;
-          }
-        }
-      }
-      if (chosen < 0) chosen = prev ?? 0;
-
+      const chosen = chooseSpot(spots.length, prev, (i, margin) => free(spots[i]!, margin));
       const rect = spots[chosen]!;
       this.previous.set(item.id, chosen);
       placed.set(item.id, rect);

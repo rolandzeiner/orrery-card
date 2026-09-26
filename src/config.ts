@@ -49,7 +49,7 @@ function oneOf<T extends string>(
   fallback: T,
 ): T {
   const value = raw[key];
-  if (value === undefined || value === null || value === "") return fallback;
+  if (isUnset(value)) return fallback;
   if (typeof value === "string" && (allowed as ReadonlyArray<string>).includes(value)) {
     return value as T;
   }
@@ -64,39 +64,45 @@ export function resolveConfig(raw: unknown): ResolvedConfig {
     throw new Error("The card configuration must be a mapping of options.");
   }
   const cfg = raw as Record<string, unknown>;
-
-  const title = cfg.title ?? "";
-  if (typeof title !== "string") {
-    throw new Error('"title" must be text.');
-  }
-
-  let tilt = DEFAULTS.tilt;
-  if (cfg.tilt !== undefined && cfg.tilt !== null && cfg.tilt !== "") {
-    const n = typeof cfg.tilt === "string" ? Number(cfg.tilt) : cfg.tilt;
-    if (typeof n !== "number" || !Number.isFinite(n) || n < TILT_MIN || n > TILT_MAX) {
-      throw new Error(`"tilt" must be a number from ${TILT_MIN} to ${TILT_MAX}.`);
-    }
-    tilt = n;
-  }
-
-  const resolved: ResolvedConfig = {
+  return {
     ...DEFAULTS,
-    title: title.trim(),
+    title: parseTitle(cfg.title),
     scale: oneOf(cfg, "scale", SCALES, DEFAULTS.scale),
-    tilt,
+    tilt: parseTilt(cfg.tilt),
     view: oneOf(cfg, "view", VIEWS, DEFAULTS.view),
     appearance: oneOf(cfg, "appearance", APPEARANCES, DEFAULTS.appearance),
+    ...parseFlags(cfg),
   };
+}
 
+const isUnset = (value: unknown): boolean => value === undefined || value === null || value === "";
+
+function parseTitle(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  if (typeof value !== "string") throw new Error('"title" must be text.');
+  return value.trim();
+}
+
+function parseTilt(value: unknown): number {
+  if (isUnset(value)) return DEFAULTS.tilt;
+  const n = typeof value === "string" ? Number(value) : value;
+  if (typeof n !== "number" || !Number.isFinite(n) || n < TILT_MIN || n > TILT_MAX) {
+    throw new Error(`"tilt" must be a number from ${TILT_MIN} to ${TILT_MAX}.`);
+  }
+  return n;
+}
+
+type FlagKey = (typeof FLAGS)[keyof typeof FLAGS];
+
+function parseFlags(cfg: Record<string, unknown>): Partial<Record<FlagKey, boolean>> {
+  const out: Partial<Record<FlagKey, boolean>> = {};
   for (const [yamlKey, key] of Object.entries(FLAGS)) {
     const value = cfg[yamlKey];
     if (value === undefined || value === null) continue;
-    if (typeof value !== "boolean") {
-      throw new Error(`"${yamlKey}" must be true or false.`);
-    }
-    resolved[key] = value;
+    if (typeof value !== "boolean") throw new Error(`"${yamlKey}" must be true or false.`);
+    out[key] = value;
   }
-  return resolved;
+  return out;
 }
 
 /** Every option's default, keyed as the user writes it in YAML. */

@@ -5,9 +5,10 @@ import { classMap } from "lit/directives/class-map.js";
 import { PLANET_BY_KEY, type PlanetKey } from "./astro/bodies";
 import { helio, planetDetails } from "./astro/ephemeris";
 import { DEFAULTS, resolveConfig } from "./config";
-import { CARD_NAME, CARD_TAG, CARD_VERSION, DAY_MS, MAX_TIME, MIN_TIME } from "./const";
+import { CARD_NAME, CARD_TAG, CARD_VERSION } from "./const";
 import "./editor";
-import { CardFormat, DEFAULT_SPEED, resolveHour12, resolveTimeZone, SPEEDS, type SpeedKey } from "./format";
+import { CardFormat, DEFAULT_SPEED, resolveHour12, resolveTimeZone, SPEEDS, speedDays, type SpeedKey } from "./format";
+import { advanceTime, keyCommand, moveToDate, stepTime, ViewGesture } from "./interaction";
 import { resolveLang } from "./localize/localize";
 import {
   azimuthFacing,
@@ -33,9 +34,6 @@ console.info(
 const AMBIENT_FRAME_MS = 50;
 /** How often live mode checks the clock. The date line shows minutes. */
 const LIVE_TICK_MS = 15_000;
-const ROTATE_PER_PX = 0.008;
-const TILT_PER_PX = 0.006;
-const KEY_STEP = (5 * Math.PI) / 180;
 
 @customElement(CARD_TAG)
 export class OrreryCard extends LitElement {
@@ -78,9 +76,7 @@ export class OrreryCard extends LitElement {
   private _toastTimer?: ReturnType<typeof setTimeout>;
   private readonly _reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-  private readonly _pointers = new Map<number, { x: number; y: number }>();
-  private _drag: { x0: number; y0: number; az0: number; el0: number; moved: boolean } | null = null;
-  private _pinch: { d0: number; z0: number } | null = null;
+  private readonly _gesture = new ViewGesture();
 
   // ── HA card contract ───────────────────────────────────────────────────
 
@@ -209,18 +205,7 @@ export class OrreryCard extends LitElement {
     const stage = this._stage;
     if (!stage) return;
     this._resizeObserver?.disconnect();
-    this._resizeObserver = new ResizeObserver((entries) => {
-      const box = entries[0]?.contentRect;
-      if (!box || !this._renderer) return;
-      // Being laid out means being in the document: a good moment to retry
-      // a palette read that failed earlier.
-      if (!this._renderer.hasPalette) this._refreshPalette(true);
-      const size = Math.floor(fitSquare(box.width, box.height));
-      if (size > 0 && Math.abs(size - this._renderer.cssSize) >= 1) {
-        this._renderer.resize(size, window.devicePixelRatio);
-        this._draw(performance.now());
-      }
-    });
+    this._resizeObserver = new ResizeObserver((entries) => this._onStageResize(entries[0]?.contentRect));
     this._resizeObserver.observe(stage);
     this._intersection?.disconnect();
     this._intersection = new IntersectionObserver((entries) => {
@@ -228,6 +213,18 @@ export class OrreryCard extends LitElement {
       if (this._visible) this._requestDraw();
     });
     this._intersection.observe(stage);
+  }
+
+  private _onStageResize(box: DOMRectReadOnly | undefined): void {
+    const renderer = this._renderer;
+    if (!box || !renderer) return;
+    // Being laid out means being in the document: a good moment to retry
+    // a palette read that failed earlier.
+    if (!renderer.hasPalette) this._refreshPalette(true);
+    const size = Math.floor(fitSquare(box.width, box.height));
+    if (size <= 0 || Math.abs(size - renderer.cssSize) < 1) return;
+    renderer.resize(size, window.devicePixelRatio);
+    this._draw(performance.now());
   }
 
   // ── Drawing ────────────────────────────────────────────────────────────
@@ -255,21 +252,18 @@ export class OrreryCard extends LitElement {
     this._raf = 0;
     const dt = this._lastFrame ? Math.min(ts - this._lastFrame, 100) : 16;
     this._lastFrame = ts;
-    if (this._playing) {
-      const speed = SPEEDS.find((s) => s.key === this._speed)?.days ?? 30.44;
-      const next = this._t + speed * DAY_MS * (dt / 1000);
-      this._t = Math.max(MIN_TIME, Math.min(MAX_TIME, next));
-      if (this._t === MIN_TIME || this._t === MAX_TIME) this._playing = false;
-    }
-    if (this._dirty || this._playing || ts - this._lastDraw >= AMBIENT_FRAME_MS) {
-      this._draw(ts);
-    }
-    if (this._loopWanted()) {
-      this._raf = requestAnimationFrame(this._frame);
-    } else {
-      this._lastFrame = 0;
-    }
+    if (this._playing) this._advance(dt);
+    if (this._dirty || this._playing || ts - this._lastDraw >= AMBIENT_FRAME_MS) this._draw(ts);
+    if (this._loopWanted()) this._raf = requestAnimationFrame(this._frame);
+    else this._lastFrame = 0;
   };
+
+  /** One playback step; playback stops at either end of the range. */
+  private _advance(dtMs: number): void {
+    const { t, ended } = advanceTime(this._t, speedDays(this._speed), dtMs);
+    this._t = t;
+    if (ended) this._playing = false;
+  }
 
   private _draw(ts: number): void {
     const renderer = this._renderer;
@@ -368,47 +362,35 @@ export class OrreryCard extends LitElement {
   };
 
   private _onPointerDown(e: PointerEvent): void {
-    const canvas = e.currentTarget as HTMLCanvasElement;
-    canvas.setPointerCapture(e.pointerId);
-    this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (this._pointers.size === 1) {
-      this._drag = { x0: e.clientX, y0: e.clientY, az0: this._cam.az, el0: this._cam.el, moved: false };
-    } else if (this._pointers.size === 2) {
-      const [a, b] = [...this._pointers.values()];
-      if (a && b) this._pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, z0: this._cam.zoom };
-      this._drag = null;
-    }
+    (e.currentTarget as HTMLCanvasElement).setPointerCapture?.(e.pointerId);
+    this._gesture.down(e.pointerId, e.clientX, e.clientY, this._cam);
   }
 
   private _onPointerMove(e: PointerEvent): void {
-    if (!this._pointers.has(e.pointerId)) return;
-    this._pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (this._pinch && this._pointers.size === 2) {
-      const [a, b] = [...this._pointers.values()];
-      if (a && b) this._setZoom((this._pinch.z0 * Math.hypot(a.x - b.x, a.y - b.y)) / this._pinch.d0);
-    } else if (this._drag) {
-      const dx = e.clientX - this._drag.x0;
-      const dy = e.clientY - this._drag.y0;
-      if (Math.abs(dx) + Math.abs(dy) > 4) this._drag.moved = true;
-      this._cam.az = this._drag.az0 + dx * ROTATE_PER_PX;
-      this._cam.el = clampElevation(this._drag.el0 + dy * TILT_PER_PX);
-      this._requestDraw();
+    const update = this._gesture.move(e.pointerId, e.clientX, e.clientY);
+    if (!update) return;
+    if ("zoom" in update) {
+      this._setZoom(update.zoom);
+      return;
     }
+    this._cam.az = update.az;
+    this._cam.el = update.el;
+    this._requestDraw();
   }
 
   private _onPointerUp(e: PointerEvent): void {
-    // Pointer cancellation (WCAG 2.5.2): selection fires on the up event,
-    // and only for a tap that didn't turn into a drag.
-    if (e.type === "pointerup" && this._drag && !this._drag.moved && this._renderer) {
-      const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
-      const hit = this._renderer.pick(e.clientX - rect.left, e.clientY - rect.top);
-      this._selected = hit && hit !== this._selected ? hit : null;
-      this._uiKey = "";
-      this._requestDraw();
-    }
-    this._pointers.delete(e.pointerId);
-    if (this._pointers.size < 2) this._pinch = null;
-    if (this._pointers.size === 0) this._drag = null;
+    // Selection fires on release, and only for a tap that didn't become a
+    // drag — so a press can always be cancelled by moving away (WCAG 2.5.2).
+    if (!this._gesture.up(e.pointerId, e.type !== "pointerup") || !this._renderer) return;
+    const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
+    this._select(this._renderer.pick(e.clientX - rect.left, e.clientY - rect.top));
+  }
+
+  /** Tapping a planet selects it; tapping it again, or empty sky, clears. */
+  private _select(hit: PlanetKey | null): void {
+    this._selected = hit && hit !== this._selected ? hit : null;
+    this._uiKey = "";
+    this._requestDraw();
   }
 
   private readonly _wheel = {
@@ -428,17 +410,16 @@ export class OrreryCard extends LitElement {
   };
 
   private _onKeyDown(e: KeyboardEvent): void {
-    let handled = true;
-    if (e.key === "ArrowLeft") this._cam.az -= KEY_STEP;
-    else if (e.key === "ArrowRight") this._cam.az += KEY_STEP;
-    else if (e.key === "ArrowUp") this._cam.el = clampElevation(this._cam.el + KEY_STEP);
-    else if (e.key === "ArrowDown") this._cam.el = clampElevation(this._cam.el - KEY_STEP);
-    else if (e.key === "+" || e.key === "=") this._setZoom(this._cam.zoom * 1.15);
-    else if (e.key === "-") this._setZoom(this._cam.zoom / 1.15);
-    else if (e.key === "0") this._resetView();
-    else handled = false;
-    if (handled) {
-      e.preventDefault();
+    const command = keyCommand(e.key);
+    if (!command) return;
+    e.preventDefault();
+    if (command.kind === "reset") {
+      this._resetView();
+    } else if (command.kind === "zoom") {
+      this._setZoom(this._cam.zoom * command.factor);
+    } else {
+      this._cam.az += command.az;
+      this._cam.el = clampElevation(this._cam.el + command.el);
       this._requestDraw();
     }
   }
@@ -477,23 +458,15 @@ export class OrreryCard extends LitElement {
   }
 
   private _step(days: number, months: number): void {
-    const d = new Date(this._t);
-    if (months) d.setUTCMonth(d.getUTCMonth() + months);
-    const t = d.getTime() + days * DAY_MS;
-    this._t = Math.max(MIN_TIME, Math.min(MAX_TIME, t));
+    this._t = stepTime(this._t, days, months);
     this._live = false;
     this._requestDraw();
   }
 
   private _onDateInput(e: Event): void {
-    const value = (e.target as HTMLInputElement).value;
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-    if (!m) return;
-    // Shift by whole days so the time of day stays put.
-    const [y, mo, d] = this._fmt().ymd(this._t);
-    const target = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    const shift = target - Date.UTC(y, mo - 1, d);
-    this._t = Math.max(MIN_TIME, Math.min(MAX_TIME, this._t + shift));
+    const t = moveToDate(this._t, (e.target as HTMLInputElement).value, this._fmt().ymd(this._t));
+    if (t === null) return;
+    this._t = t;
     this._live = false;
     this._playing = false;
     this._requestDraw();

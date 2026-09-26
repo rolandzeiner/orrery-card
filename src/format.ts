@@ -18,6 +18,9 @@ export const SPEEDS = [
 export type SpeedKey = (typeof SPEEDS)[number]["key"];
 export const DEFAULT_SPEED: SpeedKey = "month";
 
+/** Days of sky time per second of playback. */
+export const speedDays = (key: SpeedKey): number => SPEEDS.find((s) => s.key === key)?.days ?? 30.44;
+
 /** Ranges the corner arcs fill across — each quantity's real extremes. */
 const RANGES = {
   sunEarth: [0.9833, 1.0167],

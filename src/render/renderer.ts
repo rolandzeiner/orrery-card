@@ -10,6 +10,7 @@ import {
   SATURN_POLE,
   skySnapshot,
   type SkySnapshot,
+  type TickLabel,
   type Vec3,
 } from "../astro/ephemeris";
 import { DAY_MS } from "../const";
@@ -85,6 +86,53 @@ const TRAIL = 0.08;
 const MIN_SIZE_FOR_GAUGES = 280;
 
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
+
+interface TickGeometry {
+  x: number;
+  y: number;
+  depth: number;
+  /** Unit tangent along the orbit, in screen space. */
+  tx: number;
+  ty: number;
+  /** Unit normal pointing away from the Sun. */
+  nx: number;
+  ny: number;
+}
+
+interface PlanetLabelItem extends LabelItem {
+  text: string;
+  depth: number;
+}
+
+/** Inside the canvas, with `margin` px of slack on every side. */
+function onCanvas(p: readonly number[], size: number, margin: number): boolean {
+  const x = p[0] ?? NaN;
+  const y = p[1] ?? NaN;
+  return x >= -margin && y >= -margin && x <= size + margin && y <= size + margin;
+}
+
+/** Is this tick label the month or year currently shown? */
+export function isCurrentLabel(label: TickLabel, date: Pick<DateLine, "monthKey" | "year">): boolean {
+  if (label.kind === "month") return label.year * 12 + label.month === date.monthKey;
+  return date.year >= label.year && date.year < label.year + label.span;
+}
+
+/** Text angle along a tangent, flipped so labels never read upside down. */
+export function uprightAngle(tx: number, ty: number): number {
+  const a = Math.atan2(ty, tx);
+  if (a > Math.PI / 2) return a - Math.PI;
+  if (a < -Math.PI / 2) return a + Math.PI;
+  return a;
+}
+
+/** Label priority: the selected planet, then Earth, then outwards from the
+ *  Sun. Deliberately not depth order — that flips as planets pass each
+ *  other, and the labels would jump with it. */
+export function labelPriority(selected: PlanetKey | null): PlanetKey[] {
+  const keys = PLANETS.map((p) => p.key);
+  const rank = (k: PlanetKey): number => (k === selected ? -2 : k === "earth" ? -1 : keys.indexOf(k));
+  return keys.sort((a, b) => rank(a) - rank(b));
+}
 
 export class OrreryRenderer {
   private readonly ctx: CanvasRenderingContext2D;
@@ -203,12 +251,7 @@ export class OrreryRenderer {
     if (this.opts.showBelt) this.drawBelt(proj, frame.t, pal);
     this.drawSun(proj, frame.ts, pal);
 
-    this.screen.clear();
-    for (const p of PLANETS) {
-      const pos = sky.pos.get(p.body);
-      if (!pos) continue;
-      this.screen.set(p.key, proj.project(this.mapper.toWorld(pos, this.w), [0, 0, 0, 1]));
-    }
+    this.projectPlanets(proj, sky);
     if (this.opts.showTrails) this.drawTrails(frame, pal);
     this.drawSightLine(frame.selected, pal);
     this.drawPlanets(proj, sky, frame.selected, pal);
@@ -217,6 +260,14 @@ export class OrreryRenderer {
   }
 
   // ── Layers ─────────────────────────────────────────────────────────────
+
+  private projectPlanets(proj: Projector, sky: SkySnapshot): void {
+    this.screen.clear();
+    for (const p of PLANETS) {
+      const pos = sky.pos.get(p.body);
+      if (pos) this.screen.set(p.key, proj.project(this.mapper.toWorld(pos, this.w), [0, 0, 0, 1]));
+    }
+  }
 
   private depthAlpha(d: number, lo: number, hi: number, zoom: number): number {
     const n = Math.max(-1, Math.min(1, d * Math.min(zoom, 3)));
@@ -234,29 +285,36 @@ export class OrreryRenderer {
   }
 
   private drawBackground(proj: Projector, pal: Palette): void {
+    this.ctx.clearRect(0, 0, this.size, this.size);
+    if (pal.skyInner && pal.skyOuter) this.fillSky(proj, pal.skyInner, pal.skyOuter);
+    if (pal.star) this.drawStars(proj, pal.star);
+  }
+
+  private fillSky(proj: Projector, inner: string, outer: string): void {
+    const ctx = this.ctx;
+    if (!this.sky0) {
+      const g = ctx.createRadialGradient(proj.cx, proj.cy * 0.96, 0, proj.cx, proj.cy, this.size * 0.75);
+      g.addColorStop(0, inner);
+      g.addColorStop(1, outer);
+      this.sky0 = g;
+    }
+    ctx.fillStyle = this.sky0;
+    ctx.fillRect(0, 0, this.size, this.size);
+  }
+
+  /** Stars on a sphere around the scene, so they turn with the view. Only
+   *  the far half is drawn: the near half would sit in front of the planets. */
+  private drawStars(proj: Projector, color: string): void {
     const ctx = this.ctx;
     const S = this.size;
-    ctx.clearRect(0, 0, S, S);
-    if (pal.skyInner && pal.skyOuter) {
-      if (!this.sky0) {
-        const g = ctx.createRadialGradient(proj.cx, proj.cy * 0.96, 0, proj.cx, proj.cy, S * 0.75);
-        g.addColorStop(0, pal.skyInner);
-        g.addColorStop(1, pal.skyOuter);
-        this.sky0 = g;
-      }
-      ctx.fillStyle = this.sky0;
-      ctx.fillRect(0, 0, S, S);
-    }
-    if (!pal.star) return;
-    ctx.fillStyle = pal.star;
     const R = S * 0.74;
     const o = this.r;
+    ctx.fillStyle = color;
     for (const star of STARS) {
       proj.rotate(star.dir[0], star.dir[1], star.dir[2], o);
-      if (o[2] < 0) continue; // on the near side of the celestial sphere
       const x = proj.cx + o[0] * R;
       const y = proj.cy + o[1] * R;
-      if (x < 0 || y < 0 || x > S || y > S) continue;
+      if (o[2] < 0 || !onCanvas([x, y], S, 0)) continue;
       ctx.globalAlpha = star.alpha * (0.4 + 0.6 * o[2]);
       ctx.fillRect(x, y, star.size, star.size);
     }
@@ -295,116 +353,129 @@ export class OrreryRenderer {
   }
 
   private drawOrbits(proj: Projector, frame: Frame, pal: Palette): void {
-    const ctx = this.ctx;
-    const CH = 8;
-    const zoom = frame.cam.zoom;
     for (const p of PLANETS) {
-      const orbit = this.cache.orbit(p, frame.t);
-      const n = orbit.pts.length;
-      let scr = this.orbitScreens.get(p.key);
-      if (!scr || scr.length !== n * 3) {
-        scr = new Float32Array(n * 3);
-        this.orbitScreens.set(p.key, scr);
-      }
-      for (let i = 0; i < n; i++) {
-        proj.project(this.mapper.toWorld(orbit.pts[i]!, this.w), this.p);
-        scr[i * 3] = this.p[0];
-        scr[i * 3 + 1] = this.p[1];
-        scr[i * 3 + 2] = this.p[2];
-      }
       const sel = frame.selected === p.key;
-      ctx.lineWidth = sel ? 1.4 : 1;
-      ctx.strokeStyle = sel ? pal.accent2 : pal.orbit;
-      for (let c = 0; c < n; c += CH) {
-        ctx.beginPath();
-        ctx.moveTo(scr[c * 3]!, scr[c * 3 + 1]!);
-        let depth = 0;
-        for (let j = 1; j <= CH; j++) {
-          const i = (c + j) % n;
-          ctx.lineTo(scr[i * 3]!, scr[i * 3 + 1]!);
-          depth += scr[i * 3 + 2]!;
-        }
-        const a = this.depthAlpha(depth / CH, 0.16, 0.5, zoom);
-        ctx.globalAlpha = sel ? Math.min(1, a + 0.3) : a;
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
+      this.strokeOrbit(this.projectOrbit(p, proj, frame.t), sel, frame.cam.zoom, pal);
       if (this.opts.showTicks) this.drawTicks(p, proj, frame, sel, pal);
     }
   }
 
-  private drawTicks(p: PlanetDef, proj: Projector, frame: Frame, sel: boolean, pal: Palette): void {
+  /** Orbit samples in screen space: x, y, depth per sample. Kept per planet
+   *  because the trails read the same samples. */
+  private projectOrbit(p: PlanetDef, proj: Projector, t: number): Float32Array {
+    const orbit = this.cache.orbit(p, t);
+    const n = orbit.pts.length;
+    let scr = this.orbitScreens.get(p.key);
+    if (!scr || scr.length !== n * 3) {
+      scr = new Float32Array(n * 3);
+      this.orbitScreens.set(p.key, scr);
+    }
+    for (let i = 0; i < n; i++) {
+      proj.project(this.mapper.toWorld(orbit.pts[i]!, this.w), this.p);
+      scr[i * 3] = this.p[0];
+      scr[i * 3 + 1] = this.p[1];
+      scr[i * 3 + 2] = this.p[2];
+    }
+    return scr;
+  }
+
+  /** Strokes an orbit in short chunks, each faded by its mean depth. */
+  private strokeOrbit(scr: Float32Array, sel: boolean, zoom: number, pal: Palette): void {
     const ctx = this.ctx;
+    const CH = 8;
+    const n = scr.length / 3;
+    ctx.lineWidth = sel ? 1.4 : 1;
+    ctx.strokeStyle = sel ? pal.accent2 : pal.orbit;
+    for (let c = 0; c < n; c += CH) {
+      ctx.beginPath();
+      ctx.moveTo(scr[c * 3]!, scr[c * 3 + 1]!);
+      let depth = 0;
+      for (let j = 1; j <= CH; j++) {
+        const i = (c + j) % n;
+        ctx.lineTo(scr[i * 3]!, scr[i * 3 + 1]!);
+        depth += scr[i * 3 + 2]!;
+      }
+      const a = this.depthAlpha(depth / CH, 0.16, 0.5, zoom);
+      ctx.globalAlpha = sel ? Math.min(1, a + 0.3) : a;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  private drawTicks(p: PlanetDef, proj: Projector, frame: Frame, sel: boolean, pal: Palette): void {
     const S = this.size;
     const fs = Math.max(8.5, Math.min(12, S * 0.0175));
-    const step = 0.012; // radians — a short hop along the orbit, for the tangent
-    const cs = Math.cos(step);
-    const sn = Math.sin(step);
     // Zoomed in, the outer orbits run past the readout ring and their year
     // labels would crowd the date band. Keep their ticks, drop the labels.
     const labelled = this.mapper.radius(p.au) * proj.scalePx < S * 0.47;
     for (const tick of this.cache.tickList(p, frame.t)) {
-      const q = tick.pos;
-      proj.project(this.mapper.toWorld(q, this.w), this.p);
-      this.w2[0] = q[0] * cs - q[1] * sn;
-      this.w2[1] = q[0] * sn + q[1] * cs;
-      this.w2[2] = q[2];
-      proj.project(this.mapper.toWorld(this.w2, this.w2), this.p2);
-      let tx = this.p2[0] - this.p[0];
-      let ty = this.p2[1] - this.p[1];
-      const tl = Math.hypot(tx, ty) || 1;
-      tx /= tl;
-      ty /= tl;
-      let nx = -ty;
-      let ny = tx;
-      if (nx * (this.p[0] - proj.cx) + ny * (this.p[1] - proj.cy) < 0) {
-        nx = -nx;
-        ny = -ny;
-      }
+      const g = this.tickGeometry(tick.pos, proj);
       const len = tick.major ? 7 : 3.5;
-      ctx.strokeStyle = sel ? pal.accent2 : pal.orbit;
-      ctx.globalAlpha = this.depthAlpha(this.p[2], 0.28, 0.75, frame.cam.zoom);
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(this.p[0] - nx * len * 0.5, this.p[1] - ny * len * 0.5);
-      ctx.lineTo(this.p[0] + nx * len * 0.5, this.p[1] + ny * len * 0.5);
-      ctx.stroke();
-
-      const label = tick.label;
-      if (!label || !labelled) continue;
-      const off = (len * 0.5 + fs * 0.85) * p.labelSide;
-      const lx = this.p[0] + nx * off;
-      const ly = this.p[1] + ny * off;
-      if (lx < -20 || ly < -20 || lx > S + 20 || ly > S + 20) continue;
-      const current =
-        label.kind === "month"
-          ? label.year * 12 + label.month === frame.date.monthKey
-          : frame.date.year >= label.year && frame.date.year < label.year + label.span;
-      const text = label.kind === "month" ? this.texts.monthLabel(label.month) : String(label.year);
-      let ang = Math.atan2(ty, tx);
-      if (ang > Math.PI / 2) ang -= Math.PI;
-      if (ang < -Math.PI / 2) ang += Math.PI;
-      ctx.save();
-      ctx.translate(lx, ly);
-      ctx.rotate(ang);
-      ctx.font = this.font(current ? 600 : 400, fs);
-      this.spacing("0.08em");
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      if (current) {
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = pal.accent;
-        ctx.shadowColor = pal.accent;
-        ctx.shadowBlur = 8;
-      } else {
-        ctx.globalAlpha = this.depthAlpha(this.p[2], 0.45, 0.95, frame.cam.zoom);
-        ctx.fillStyle = pal.label;
+      this.drawTickMark(g, len, sel, frame.cam.zoom, pal);
+      if (tick.label && labelled) {
+        const offset = (len * 0.5 + fs * 0.85) * p.labelSide;
+        this.drawTickLabel(tick.label, g, offset, fs, frame, pal);
       }
-      ctx.fillText(text, 0, 0);
-      ctx.restore();
     }
-    ctx.globalAlpha = 1;
+    this.ctx.globalAlpha = 1;
     this.spacing("0px");
+  }
+
+  /** Where a tick sits on screen, the orbit's direction there, and the
+   *  normal pointing away from the Sun. */
+  private tickGeometry(q: Vec3, proj: Projector): TickGeometry {
+    const step = 0.012; // radians — a short hop along the orbit, for the tangent
+    proj.project(this.mapper.toWorld(q, this.w), this.p);
+    this.w2[0] = q[0] * Math.cos(step) - q[1] * Math.sin(step);
+    this.w2[1] = q[0] * Math.sin(step) + q[1] * Math.cos(step);
+    this.w2[2] = q[2];
+    proj.project(this.mapper.toWorld(this.w2, this.w2), this.p2);
+    const [x, y, depth] = this.p;
+    const tl = Math.hypot(this.p2[0] - x, this.p2[1] - y) || 1;
+    const tx = (this.p2[0] - x) / tl;
+    const ty = (this.p2[1] - y) / tl;
+    const outward = -ty * (x - proj.cx) + tx * (y - proj.cy) >= 0 ? 1 : -1;
+    return { x, y, depth, tx, ty, nx: -ty * outward, ny: tx * outward };
+  }
+
+  private drawTickMark(g: TickGeometry, len: number, sel: boolean, zoom: number, pal: Palette): void {
+    const ctx = this.ctx;
+    ctx.strokeStyle = sel ? pal.accent2 : pal.orbit;
+    ctx.globalAlpha = this.depthAlpha(g.depth, 0.28, 0.75, zoom);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(g.x - g.nx * len * 0.5, g.y - g.ny * len * 0.5);
+    ctx.lineTo(g.x + g.nx * len * 0.5, g.y + g.ny * len * 0.5);
+    ctx.stroke();
+  }
+
+  /** A month or year label, set along the orbit and kept upright. The
+   *  label for the shown month or year is lit in the accent colour. */
+  private drawTickLabel(label: TickLabel, g: TickGeometry, offset: number, fs: number, frame: Frame, pal: Palette): void {
+    const S = this.size;
+    const lx = g.x + g.nx * offset;
+    const ly = g.y + g.ny * offset;
+    if (lx < -20 || ly < -20 || lx > S + 20 || ly > S + 20) return;
+    const current = isCurrentLabel(label, frame.date);
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.translate(lx, ly);
+    ctx.rotate(uprightAngle(g.tx, g.ty));
+    ctx.font = this.font(current ? 600 : 400, fs);
+    this.spacing("0.08em");
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    if (current) {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = pal.accent;
+      ctx.shadowColor = pal.accent;
+      ctx.shadowBlur = 8;
+    } else {
+      ctx.globalAlpha = this.depthAlpha(g.depth, 0.45, 0.95, frame.cam.zoom);
+      ctx.fillStyle = pal.label;
+    }
+    ctx.fillText(label.kind === "month" ? this.texts.monthLabel(label.month) : String(label.year), 0, 0);
+    ctx.restore();
   }
 
   private drawBelt(proj: Projector, t: number, pal: Palette): void {
@@ -428,12 +499,15 @@ export class OrreryRenderer {
   }
 
   private drawSun(proj: Projector, ts: number, pal: Palette): void {
-    const ctx = this.ctx;
-    const S = this.size;
-    const { cx, cy } = proj;
     const R = this.sunRadius(proj);
+    this.drawSunHaze(proj, R, pal);
+    this.drawSunWireframe(proj, R, this.opts.ambient ? ts * 0.00011 : 0.4, pal);
+  }
 
-    const hazeR = Math.min(S * 0.34, Math.max(R * 9, 40));
+  private drawSunHaze(proj: Projector, R: number, pal: Palette): void {
+    const ctx = this.ctx;
+    const { cx, cy } = proj;
+    const hazeR = Math.min(this.size * 0.34, Math.max(R * 9, 40));
     const haze = ctx.createRadialGradient(cx, cy, 0, cx, cy, hazeR);
     haze.addColorStop(0, pal.accent2);
     haze.addColorStop(1, pal.accent2Clear);
@@ -441,14 +515,17 @@ export class OrreryRenderer {
     ctx.fillStyle = haze;
     ctx.fillRect(cx - hazeR, cy - hazeR, hazeR * 2, hazeR * 2);
     ctx.globalAlpha = 1;
+  }
 
-    const spin = this.opts.ambient ? ts * 0.00011 : 0.4;
+  /** The geodesic Sun: back edges faint, front edges and vertices bright. */
+  private drawSunWireframe(proj: Projector, R: number, spin: number, pal: Palette): void {
+    const ctx = this.ctx;
     const cs = Math.cos(spin);
     const sn = Math.sin(spin);
     const pts = SUN.vertices.map((v) => {
       const o: Vec3 = [0, 0, 0];
       proj.rotate(v[0] * cs - v[1] * sn, v[0] * sn + v[1] * cs, v[2], o);
-      return [cx + o[0] * R, cy + o[1] * R, o[2]] as const;
+      return [proj.cx + o[0] * R, proj.cy + o[1] * R, o[2]] as const;
     });
     ctx.lineWidth = R > 20 ? 0.9 : 0.7;
     ctx.strokeStyle = pal.accent2;
@@ -467,43 +544,47 @@ export class OrreryRenderer {
     if (R > 12) {
       ctx.fillStyle = pal.accent2;
       ctx.globalAlpha = 0.9;
-      for (const p of pts) if (p[2] < 0) ctx.fillRect(p[0] - 0.8, p[1] - 0.8, 1.6, 1.6);
+      for (const p of pts.filter((q) => q[2] < 0)) ctx.fillRect(p[0] - 0.8, p[1] - 0.8, 1.6, 1.6);
     }
     ctx.globalAlpha = 1;
   }
 
   private drawTrails(frame: Frame, pal: Palette): void {
     const ctx = this.ctx;
-    const m = Math.round(ORBIT_SAMPLES * TRAIL);
     ctx.lineWidth = 1.8;
     ctx.lineCap = "round";
     for (const p of PLANETS) {
       const scr = this.orbitScreens.get(p.key);
       const here = this.screen.get(p.key);
       if (!scr || !here) continue;
-      const orbit = this.cache.orbit(p, frame.t);
-      const n = scr.length / 3;
-      const idx = Math.floor(orbitIndex(orbit, p, frame.t));
       ctx.strokeStyle = frame.selected === p.key ? pal.accent2 : pal.accent;
-      let px = NaN;
-      let py = NaN;
-      for (let j = m; j >= 0; j--) {
-        const i = (((idx - j) % n) + n) % n;
-        const x = j === 0 ? here[0] : scr[i * 3]!;
-        const y = j === 0 ? here[1] : scr[i * 3 + 1]!;
-        if (!Number.isNaN(px)) {
-          ctx.globalAlpha = 0.85 * (1 - j / m);
-          ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(x, y);
-          ctx.stroke();
-        }
-        px = x;
-        py = y;
-      }
+      const idx = Math.floor(orbitIndex(this.cache.orbit(p, frame.t), p, frame.t));
+      this.strokeTrail(scr, here, idx);
     }
     ctx.lineCap = "butt";
     ctx.globalAlpha = 1;
+  }
+
+  /** A trail back along the orbit samples to the planet's exact position,
+   *  fading out with age. Segment j runs from sample j+1 to sample j. */
+  private strokeTrail(scr: Float32Array, here: Screen, idx: number): void {
+    const ctx = this.ctx;
+    const m = Math.round(ORBIT_SAMPLES * TRAIL);
+    const n = scr.length / 3;
+    const point = (j: number): readonly [number, number] => {
+      if (j === 0) return [here[0], here[1]];
+      const i = (((idx - j) % n) + n) % n;
+      return [scr[i * 3]!, scr[i * 3 + 1]!];
+    };
+    for (let j = m - 1; j >= 0; j--) {
+      const [x0, y0] = point(j + 1);
+      const [x1, y1] = point(j);
+      ctx.globalAlpha = 0.85 * (1 - j / m);
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    }
   }
 
   private drawSightLine(selected: PlanetKey | null, pal: Palette): void {
@@ -525,52 +606,63 @@ export class OrreryRenderer {
   }
 
   private drawPlanets(proj: Projector, sky: SkySnapshot, selected: PlanetKey | null, pal: Palette): void {
-    const ctx = this.ctx;
     const S = this.size;
     const sizeScale = Math.max(0.75, Math.min(1.35, S / 520));
+    // Far to near, so nearer planets paint over farther ones.
     const order = PLANETS.slice().sort(
       (a, b) => (this.screen.get(b.key)?.[2] ?? 0) - (this.screen.get(a.key)?.[2] ?? 0),
     );
     this.dotRadius.clear();
     for (const p of order) {
       const s = this.screen.get(p.key);
-      if (!s) continue;
-      const [x, y, , k] = s;
-      if (x < -30 || y < -30 || x > S + 30 || y > S + 30) continue;
-      const r = p.size * sizeScale * (0.8 + 0.2 * k);
+      if (!s || !onCanvas(s, S, 30)) continue;
+      const r = p.size * sizeScale * (0.8 + 0.2 * s[3]);
       this.dotRadius.set(p.key, r);
-      const col = selected === p.key ? pal.accent2 : pal.accent;
-      const clear = selected === p.key ? pal.accent2Clear : pal.accentClear;
-
-      if (p.body === Body.Saturn) this.drawRing(proj, x, y, r, true, col);
-
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 4.5);
-      glow.addColorStop(0, col);
-      glow.addColorStop(1, clear);
-      ctx.globalAlpha = 0.45;
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(x, y, r * 4.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-
-      ctx.fillStyle = p.key === "earth" && selected !== "earth" ? pal.earthCore : col;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
-      if (p.key === "earth") {
-        ctx.strokeStyle = col;
-        ctx.globalAlpha = 0.9;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(x, y, r + 3, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
-      if (p.body === Body.Saturn) this.drawRing(proj, x, y, r, false, col);
+      this.drawPlanet(proj, p, s, r, selected, pal);
     }
     const earth = this.screen.get("earth");
     if (this.opts.showMoon && earth) this.drawMoon(proj, sky, earth, sizeScale, pal);
+  }
+
+  private drawPlanet(proj: Projector, p: PlanetDef, s: Screen, r: number, selected: PlanetKey | null, pal: Palette): void {
+    const ctx = this.ctx;
+    const [x, y] = s;
+    const sel = selected === p.key;
+    const col = sel ? pal.accent2 : pal.accent;
+    const saturn = p.body === Body.Saturn;
+    if (saturn) this.drawRing(proj, x, y, r, true, col);
+    this.drawGlow(x, y, r, col, sel ? pal.accent2Clear : pal.accentClear);
+    ctx.fillStyle = p.key === "earth" && !sel ? pal.earthCore : col;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    if (p.key === "earth") this.drawEarthRing(x, y, r, col);
+    if (saturn) this.drawRing(proj, x, y, r, false, col);
+  }
+
+  private drawGlow(x: number, y: number, r: number, col: string, clear: string): void {
+    const ctx = this.ctx;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 4.5);
+    glow.addColorStop(0, col);
+    glow.addColorStop(1, clear);
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  /** Earth gets a thin ring around its dot: "you are here". */
+  private drawEarthRing(x: number, y: number, r: number, col: string): void {
+    const ctx = this.ctx;
+    ctx.strokeStyle = col;
+    ctx.globalAlpha = 0.9;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x, y, r + 3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   private drawRing(proj: Projector, x: number, y: number, r: number, back: boolean, col: string): void {
@@ -631,48 +723,48 @@ export class OrreryRenderer {
     const fs = Math.max(9, Math.min(12.5, S * 0.019));
     ctx.font = this.font(500, fs);
     this.spacing("0.12em");
+    const items = this.labelItems(labelPriority(selected), fs);
+    const placed = this.labels.place(items, this.labelObstacles(proj), { x: 2, y: 2, w: S - 4, h: S - 4 });
 
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    for (const item of items) {
+      const rect = placed.get(item.id);
+      if (!rect) continue;
+      const sel = item.id === selected;
+      ctx.font = this.font(sel ? 600 : 500, fs);
+      ctx.fillStyle = sel ? pal.accent2 : pal.ink;
+      ctx.globalAlpha = sel ? 1 : this.depthAlpha(item.depth, 0.55, 0.92, 1);
+      ctx.fillText(item.text, rect.x + 1, rect.y + rect.h / 2);
+    }
+    ctx.globalAlpha = 1;
+    this.spacing("0px");
+  }
+
+  /** What planet names must not cover: the Sun and every planet dot. */
+  private labelObstacles(proj: Projector): Rect[] {
     const sunR = this.sunRadius(proj);
     const obstacles: Rect[] = [{ x: proj.cx - sunR, y: proj.cy - sunR, w: sunR * 2, h: sunR * 2 }];
     for (const [key, r] of this.dotRadius) {
       const s = this.screen.get(key);
       if (s) obstacles.push({ x: s[0] - r - 2, y: s[1] - r - 2, w: r * 2 + 4, h: r * 2 + 4 });
     }
-    // Stable priority: the selected planet, then Earth, then Sun-outwards.
-    // Never depth order — it flips as planets pass each other.
-    const keys = PLANETS.map((p) => p.key).sort((a, b) => rank(a) - rank(b));
-    function rank(k: PlanetKey): number {
-      if (k === selected) return -2;
-      if (k === "earth") return -1;
-      return PLANETS.findIndex((p) => p.key === k);
-    }
-    const items: LabelItem[] = [];
-    const text = new Map<PlanetKey, string>();
+    return obstacles;
+  }
+
+  /** One label per drawn planet, in priority order, measured in the
+   *  current font. */
+  private labelItems(keys: ReadonlyArray<PlanetKey>, fs: number): PlanetLabelItem[] {
+    const items: PlanetLabelItem[] = [];
     for (const key of keys) {
       const s = this.screen.get(key);
       const r = this.dotRadius.get(key);
       if (!s || r === undefined) continue;
-      const label = this.texts.planetLabel(key);
-      text.set(key, label);
-      items.push({ id: key, x: s[0], y: s[1], r, w: ctx.measureText(label).width + 2, h: fs * 1.15 });
+      const text = this.texts.planetLabel(key);
+      const w = this.ctx.measureText(text).width + 2;
+      items.push({ id: key, x: s[0], y: s[1], r, w, h: fs * 1.15, text, depth: s[2] });
     }
-    const placed = this.labels.place(items, obstacles, { x: 2, y: 2, w: S - 4, h: S - 4 });
-
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    for (const item of items) {
-      const rect = placed.get(item.id);
-      const key = item.id as PlanetKey;
-      const s = this.screen.get(key);
-      if (!rect || !s) continue;
-      const sel = key === selected;
-      ctx.font = this.font(sel ? 600 : 500, fs);
-      ctx.fillStyle = sel ? pal.accent2 : pal.ink;
-      ctx.globalAlpha = sel ? 1 : this.depthAlpha(s[2], 0.55, 0.92, 1);
-      ctx.fillText(text.get(key) ?? "", rect.x + 1, rect.y + rect.h / 2);
-    }
-    ctx.globalAlpha = 1;
-    this.spacing("0px");
+    return items;
   }
 
   private drawGauges(sky: SkySnapshot, pal: Palette): void {
