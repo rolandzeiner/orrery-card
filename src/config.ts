@@ -98,3 +98,34 @@ export function resolveConfig(raw: unknown): ResolvedConfig {
   }
   return resolved;
 }
+
+/** Every option's default, keyed as the user writes it in YAML. */
+export const YAML_DEFAULTS: Readonly<Record<string, string | number | boolean>> = {
+  scale: DEFAULTS.scale,
+  tilt: DEFAULTS.tilt,
+  view: DEFAULTS.view,
+  appearance: DEFAULTS.appearance,
+  ...Object.fromEntries(Object.entries(FLAGS).map(([yamlKey, key]) => [yamlKey, DEFAULTS[key]])),
+};
+
+/** The config as the editor should show it: every option present, so a
+ *  toggle that defaults to on is drawn on and a dropdown isn't blank.
+ *  (ha-form draws a missing boolean as off, and a dropdown selector
+ *  ignores `default` altogether.) */
+export function withDefaults(config: Record<string, unknown>): Record<string, unknown> {
+  return { ...YAML_DEFAULTS, ...config };
+}
+
+/** The config as it should be saved: only what differs from the defaults,
+ *  with `type` first, so the YAML stays as short as the user wrote it. */
+export function tidyConfig(config: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(config)) {
+    // "" is what a cleared text field or dropdown hands back.
+    if (value === undefined || value === null || value === "") continue;
+    if (key in YAML_DEFAULTS && YAML_DEFAULTS[key] === value) continue;
+    out[key] = value;
+  }
+  const { type, ...rest } = out;
+  return type === undefined ? rest : { type, ...rest };
+}

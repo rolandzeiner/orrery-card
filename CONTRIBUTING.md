@@ -48,7 +48,8 @@ CI runs these five plus `npm audit --omit=dev --audit-level=high`, HACS plugin v
 | `src/render/` | Canvas renderer, camera projection, distance scales, label placement, palette |
 | `src/astro/` | Planet table and the astronomy-engine wrappers (orbits, ticks, readouts) |
 | `src/format.ts` | Everything localised: dates, numbers, readout text |
-| `src/config.ts` | YAML validation and defaults |
+| `src/config.ts` | YAML validation, defaults, and the editor's fill-in / tidy-up of defaults |
+| `src/editor.ts`, `src/editor-schema.ts` | Visual editor: `ha-form` with the defaults filled in, saving only what changed |
 | `tests/` | vitest suites, all pure node — no DOM needed |
 
 The card only redraws when something changes. Keep it that way: a new animation must stop when the card is off screen, when the tab is hidden, and under `prefers-reduced-motion`.

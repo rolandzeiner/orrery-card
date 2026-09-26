@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULTS, resolveConfig } from "../src/config";
+import { DEFAULTS, resolveConfig, tidyConfig, withDefaults, YAML_DEFAULTS } from "../src/config";
 
 describe("resolveConfig", () => {
   it("fills every default from an empty config", () => {
@@ -39,5 +39,43 @@ describe("resolveConfig", () => {
   it("rejects a config that isn't a mapping", () => {
     expect(() => resolveConfig(null)).toThrow(/mapping/);
     expect(() => resolveConfig([])).toThrow(/mapping/);
+  });
+});
+
+describe("editor round trip", () => {
+  it("shows every option with its default, so toggles that default to on are drawn on", () => {
+    const shown = withDefaults({ type: "custom:orrery-card" });
+    expect(shown.show_controls).toBe(true);
+    expect(shown.ambient_motion).toBe(true);
+    expect(shown.scale).toBe("log");
+    expect(shown.appearance).toBe("space");
+    expect(shown.tilt).toBe(1);
+  });
+
+  it("keeps what the user set over the defaults", () => {
+    expect(withDefaults({ show_belt: false, scale: "true" })).toMatchObject({ show_belt: false, scale: "true" });
+  });
+
+  it("saves only what differs from the defaults, with type first", () => {
+    const edited = { ...withDefaults({ type: "custom:orrery-card" }), show_belt: false, tilt: 3, title: "" };
+    expect(tidyConfig(edited)).toEqual({ type: "custom:orrery-card", show_belt: false, tilt: 3 });
+    expect(Object.keys(tidyConfig(edited))[0]).toBe("type");
+  });
+
+  it("drops cleared fields", () => {
+    expect(tidyConfig({ type: "custom:orrery-card", scale: "", title: "", view: undefined })).toEqual({
+      type: "custom:orrery-card",
+    });
+  });
+
+  it("round-trips an untouched config unchanged", () => {
+    const cfg = { type: "custom:orrery-card", view: "inner" };
+    expect(tidyConfig(withDefaults(cfg))).toEqual(cfg);
+  });
+
+  it("covers every option the card reads", () => {
+    const yamlKeys = Object.keys(YAML_DEFAULTS).sort();
+    const resolvedKeys = Object.keys(DEFAULTS).filter((k) => k !== "title");
+    expect(yamlKeys).toHaveLength(resolvedKeys.length);
   });
 });

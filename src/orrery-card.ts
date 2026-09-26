@@ -4,10 +4,11 @@ import { classMap } from "lit/directives/class-map.js";
 
 import { PLANET_BY_KEY, type PlanetKey } from "./astro/bodies";
 import { helio, planetDetails } from "./astro/ephemeris";
-import { DEFAULTS, resolveConfig, SCALES, TILT_MAX, TILT_MIN } from "./config";
+import { DEFAULTS, resolveConfig } from "./config";
 import { CARD_NAME, CARD_TAG, CARD_VERSION, DAY_MS, MAX_TIME, MIN_TIME } from "./const";
+import "./editor";
 import { CardFormat, DEFAULT_SPEED, resolveHour12, resolveTimeZone, SPEEDS, type SpeedKey } from "./format";
-import { localize, resolveLang } from "./localize/localize";
+import { resolveLang } from "./localize/localize";
 import {
   azimuthFacing,
   clampElevation,
@@ -20,7 +21,7 @@ import {
 import { readPalette } from "./render/palette";
 import { OrreryRenderer, type RenderOptions } from "./render/renderer";
 import { cardStyles } from "./styles";
-import type { ConfigForm, HomeAssistant, ResolvedConfig } from "./types";
+import type { HomeAssistant, ResolvedConfig } from "./types";
 
 console.info(
   `%c ORRERY-CARD %c ${CARD_VERSION} `,
@@ -113,79 +114,10 @@ export class OrreryCard extends LitElement {
     return {};
   }
 
-  public static getConfigForm(): ConfigForm {
-    // getConfigForm is static and receives no hass, so read the language
-    // HA writes onto <html lang> for the logged-in user.
-    const lang = document.documentElement.lang || navigator.language;
-    const t = (key: string): string => localize(`editor.${key}`, lang);
-    const has = (key: string): boolean => t(key) !== `editor.${key}`;
-    return {
-      schema: [
-        { name: "title", selector: { text: {} } },
-        {
-          name: "scale",
-          selector: {
-            select: { mode: "dropdown", options: SCALES.map((v) => ({ value: v, label: t(`scale_${v}`) })) },
-          },
-        },
-        { name: "tilt", selector: { number: { min: TILT_MIN, max: TILT_MAX, step: 0.5, mode: "slider" } } },
-        {
-          type: "grid",
-          name: "",
-          schema: [
-            {
-              name: "view",
-              selector: {
-                select: {
-                  mode: "dropdown",
-                  options: [
-                    { value: "all", label: t("view_all") },
-                    { value: "inner", label: t("view_inner") },
-                  ],
-                },
-              },
-            },
-            {
-              name: "appearance",
-              selector: {
-                select: {
-                  mode: "dropdown",
-                  options: [
-                    { value: "space", label: t("appearance_space") },
-                    { value: "theme", label: t("appearance_theme") },
-                  ],
-                },
-              },
-            },
-          ],
-        },
-        {
-          type: "expandable",
-          name: "layers",
-          title: t("layers"),
-          flatten: true,
-          schema: [
-            {
-              type: "grid",
-              name: "",
-              schema: [
-                "show_controls",
-                "show_date",
-                "show_readouts",
-                "show_labels",
-                "show_ticks",
-                "show_trails",
-                "show_belt",
-                "show_moon",
-              ].map((name) => ({ name, selector: { boolean: {} } })),
-            },
-            { name: "ambient_motion", selector: { boolean: {} } },
-          ],
-        },
-      ],
-      computeLabel: ({ name }) => t(name),
-      computeHelper: ({ name }) => (has(`${name}_helper`) ? t(`${name}_helper`) : undefined),
-    };
+  public static getConfigElement(): HTMLElement {
+    // Synchronous on purpose: the editor module is imported at the top of
+    // this file, so the element is always registered by now.
+    return document.createElement(`${CARD_TAG}-editor`);
   }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────

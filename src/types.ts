@@ -111,8 +111,3 @@ export type HaFormSchema =
   | HaFormGridSchema
   | HaFormExpandableSchema;
 
-export interface ConfigForm {
-  schema: ReadonlyArray<HaFormSchema>;
-  computeLabel: (field: { name: string }) => string;
-  computeHelper: (field: { name: string }) => string | undefined;
-}
