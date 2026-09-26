@@ -58,6 +58,10 @@ describe("editor round trip", () => {
     expect(shown.tilt).toBe(1);
   });
 
+  it("treats cleared values as unset rather than blanking the default", () => {
+    expect(withDefaults({ scale: "", show_belt: null, tilt: undefined })).toMatchObject({ scale: "log", show_belt: true, tilt: 1 });
+  });
+
   it("keeps what the user set over the defaults", () => {
     expect(withDefaults({ show_belt: false, scale: "true" })).toMatchObject({ show_belt: false, scale: "true" });
   });

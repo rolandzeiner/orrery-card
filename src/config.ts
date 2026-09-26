@@ -124,7 +124,12 @@ export const YAML_DEFAULTS: Readonly<Record<string, string | number | boolean>> 
  *  (ha-form draws a missing boolean as off, and a dropdown selector
  *  ignores `default` altogether.) */
 export function withDefaults(config: Record<string, unknown>): Record<string, unknown> {
-  return { ...YAML_DEFAULTS, ...config };
+  const out: Record<string, unknown> = { ...YAML_DEFAULTS };
+  for (const [key, value] of Object.entries(config)) {
+    // An unset value falls back to the default instead of blanking it out.
+    if (!isUnset(value)) out[key] = value;
+  }
+  return out;
 }
 
 /** The config as it should be saved: only what differs from the defaults,
@@ -133,7 +138,7 @@ export function tidyConfig(config: Record<string, unknown>): Record<string, unkn
   const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(config)) {
     // "" is what a cleared text field or dropdown hands back.
-    if (value === undefined || value === null || value === "") continue;
+    if (isUnset(value)) continue;
     if (key in YAML_DEFAULTS && YAML_DEFAULTS[key] === value) continue;
     out[key] = value;
   }
