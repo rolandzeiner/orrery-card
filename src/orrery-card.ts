@@ -598,6 +598,7 @@ export class OrreryCard extends LitElement {
             @wheel=${this._wheel}
             @keydown=${this._onKeyDown}
           ></canvas>
+          ${c.showControls ? this._renderViewBar(fmt) : nothing}
           ${this._toast ? html`<div class="toast" role="status">${fmt.t("card.zoom_hint")}</div>` : nothing}
         </div>
         <p class="readout" aria-live="polite">${this._readout(fmt)}</p>
@@ -630,41 +631,67 @@ export class OrreryCard extends LitElement {
     return html`${before}<strong>${name}</strong>${after}`;
   }
 
-  private _renderControls(fmt: CardFormat): TemplateResult {
-    const iconButton = (label: string, icon: string, onClick: () => void): TemplateResult => html`
-      <button type="button" aria-label=${label} title=${label} @click=${onClick}>
+  private _iconButton(label: string, icon: string, onClick: () => void): TemplateResult {
+    return html`
+      <button type="button" class="icon" aria-label=${label} title=${label} @click=${onClick}>
         <ha-icon icon=${icon} aria-hidden="true"></ha-icon>
       </button>
     `;
+  }
+
+  /** Viewing controls sit on the sky they act on: the single-pointer
+   *  alternative to dragging and pinching (WCAG 2.5.1, 2.5.7). */
+  private _renderViewBar(fmt: CardFormat): TemplateResult {
+    return html`
+      <div class="viewbar" role="group" aria-label=${fmt.t("controls.view_group")}>
+        ${this._iconButton(fmt.t("controls.view"), "mdi:rotate-3d-variant", () => this._cycleView())}
+        ${this._iconButton(fmt.t("controls.zoom_out"), "mdi:minus", () => this._setZoom(this._cam.zoom / 1.3))}
+        ${this._iconButton(fmt.t("controls.zoom_in"), "mdi:plus", () => this._setZoom(this._cam.zoom * 1.3))}
+      </div>
+    `;
+  }
+
+  /** Time controls: a transport strip around one play button, and a quieter
+   *  line underneath for speed, date and the way back to now. */
+  private _renderControls(fmt: CardFormat): TemplateResult {
     const playLabel = fmt.t(this._playing ? "controls.pause" : "controls.play");
     return html`
       <div class="controls">
-        <div class="group">
-          ${iconButton(fmt.t("controls.back_month"), "mdi:rewind", () => this._step(0, -1))}
-          ${iconButton(fmt.t("controls.back_day"), "mdi:chevron-left", () => this._step(-1, 0))}
-          <button type="button" class=${classMap({ play: true, active: this._playing })} @click=${this._togglePlay}>
+        <div class="transport" role="group" aria-label=${fmt.t("controls.time_group")}>
+          ${this._iconButton(fmt.t("controls.back_month"), "mdi:chevron-double-left", () => this._step(0, -1))}
+          ${this._iconButton(fmt.t("controls.back_day"), "mdi:chevron-left", () => this._step(-1, 0))}
+          <button
+            type="button"
+            class=${classMap({ play: true, active: this._playing })}
+            aria-label=${playLabel}
+            title=${playLabel}
+            @click=${this._togglePlay}
+          >
             <ha-icon icon=${this._playing ? "mdi:pause" : "mdi:play"} aria-hidden="true"></ha-icon>
-            <span>${playLabel}</span>
           </button>
-          ${iconButton(fmt.t("controls.forward_day"), "mdi:chevron-right", () => this._step(1, 0))}
-          ${iconButton(fmt.t("controls.forward_month"), "mdi:fast-forward", () => this._step(0, 1))}
+          ${this._iconButton(fmt.t("controls.forward_day"), "mdi:chevron-right", () => this._step(1, 0))}
+          ${this._iconButton(fmt.t("controls.forward_month"), "mdi:chevron-double-right", () => this._step(0, 1))}
         </div>
-        <select aria-label=${fmt.t("controls.speed")} title=${fmt.t("controls.speed")} @change=${this._onSpeed}>
-          ${SPEEDS.map(
-            (s) => html`<option value=${s.key} ?selected=${s.key === this._speed}>${fmt.speedLabel(s.key)}</option>`,
-          )}
-        </select>
-        <span class="spacer"></span>
-        <div class="group">
-          <input
-            type="date"
-            aria-label=${fmt.t("controls.go_to_date")}
-            title=${fmt.t("controls.go_to_date")}
-            min="1800-01-01"
-            max="2200-12-31"
-            .value=${fmt.isoDate(this._t)}
-            @change=${this._onDateInput}
-          />
+        <div class="timeline">
+          <label class="chip">
+            <select aria-label=${fmt.t("controls.speed")} title=${fmt.t("controls.speed")} @change=${this._onSpeed}>
+              ${SPEEDS.map(
+                (s) => html`<option value=${s.key} ?selected=${s.key === this._speed}>${fmt.speedLabel(s.key)}</option>`,
+              )}
+            </select>
+            <ha-icon class="chevron" icon="mdi:chevron-down" aria-hidden="true"></ha-icon>
+          </label>
+          <label class="chip">
+            <input
+              type="date"
+              aria-label=${fmt.t("controls.go_to_date")}
+              title=${fmt.t("controls.go_to_date")}
+              min="1800-01-01"
+              max="2200-12-31"
+              .value=${fmt.isoDate(this._t)}
+              @change=${this._onDateInput}
+            />
+          </label>
           <button
             type="button"
             class="now"
@@ -672,13 +699,8 @@ export class OrreryCard extends LitElement {
             aria-pressed=${this._live ? "true" : "false"}
             @click=${this._goNow}
           >
-            ${fmt.t("controls.now")}
+            <span class="dot" aria-hidden="true"></span>${fmt.t("controls.now")}
           </button>
-        </div>
-        <div class="group">
-          ${iconButton(fmt.t("controls.view"), "mdi:rotate-3d-variant", () => this._cycleView())}
-          ${iconButton(fmt.t("controls.zoom_out"), "mdi:magnify-minus-outline", () => this._setZoom(this._cam.zoom / 1.3))}
-          ${iconButton(fmt.t("controls.zoom_in"), "mdi:magnify-plus-outline", () => this._setZoom(this._cam.zoom * 1.3))}
         </div>
       </div>
     `;

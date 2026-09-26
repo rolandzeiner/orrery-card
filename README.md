@@ -12,7 +12,7 @@ It runs entirely in your browser. There's no integration to install and nothing 
 ## Features
 
 - **Real positions for any date.** Planet positions come from [Astronomy Engine](https://github.com/cosinekitty/astronomy) (VSOP87) and are within 1 arcminute of NASA JPL data.
-- **3D view you can turn.** Drag to rotate, pinch or Ctrl + scroll to zoom, double-click to reset. The view button switches between tilted, from above and edge-on.
+- **3D view you can turn.** Drag to rotate, pinch or Ctrl + scroll to zoom, double-click to reset. The view button at the top of the sky switches between tilted, from above and edge-on.
 - **Time travel.** Step a day or a month at a time, jump to a date, or play time forward or back at up to 10 years a second. **Now** brings you back to the present.
 - **Tap a planet** to see which constellation it's in, how far it is from Earth and from the Sun, and how long its light takes to reach you.
 - **Time marks on every orbit.** Each tick is an equal step of time (10 days on Mercury, a year on Jupiter), so Mercury's uneven spacing shows it speeding up near the Sun. Earth's orbit is labelled with the months, and the current month is highlighted.
@@ -107,7 +107,9 @@ Set these in a theme (or with card-mod) to restyle the card:
 | Arrow keys (card focused) | Rotate and tilt the view. |
 | `+` / `-` / `0` (card focused) | Zoom in, zoom out, reset. |
 
-The time controls step back or forward by a month or a day, play and pause, set the playback speed, and jump to a date. The last three buttons change the viewing angle and zoom, so everything you can do by dragging also works with a single tap.
+Below the sky, the time controls step back or forward by a month or a day, play and pause, set the playback speed, and jump to a date. **Now** returns to the present; its dot glows while the card shows the live sky.
+
+The small bar at the top of the sky changes the viewing angle and zooms in or out, so everything you can do by dragging also works with a single tap.
 
 ## What's real and what isn't
 
@@ -121,7 +123,7 @@ The time controls step back or forward by a month or a day, play and pause, set 
 
 - **Keyboard:** every control is a real button or input. The sky can be focused and turned with the arrow keys.
 - **Screen readers:** the sky has a label with the date shown, and planet details are announced when you select one.
-- **Reduced motion:** the rotating Sun stops when your device asks for reduced motion.
+- **Reduced motion:** the rotating Sun and the button animations stop when your device asks for reduced motion.
 - **Contrast:** the light-theme accents are darker so small labels stay readable on white.
 - **Forced colors:** focus rings use the system colour.
 

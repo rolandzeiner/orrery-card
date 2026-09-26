@@ -47,6 +47,12 @@ const TRANSPARENT = /^(transparent|rgba\([^)]*,\s*0\))$/;
  *  addColorStop (so the frame stops halfway). Callers retry later. */
 export function readPalette(probe: HTMLElement): Palette | null {
   if (!probe.isConnected) return null;
+  // No transitions on the probe, ever. Under prefers-reduced-motion the
+  // card's catch-all gives every element a 0.01ms `transition: all`, and a
+  // read taken mid-transition returns the colour it is leaving (the
+  // inherited text colour) for every token. Inline !important beats any
+  // stylesheet rule, including a theme's or card-mod's.
+  probe.style.setProperty("transition", "none", "important");
   const resolve = (token: string): string => {
     probe.style.color = `var(${token})`;
     return getComputedStyle(probe).color;

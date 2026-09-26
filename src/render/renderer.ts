@@ -730,17 +730,23 @@ export class OrreryRenderer {
       ctx.textAlign = "center";
       ctx.textBaseline = "alphabetic";
       ctx.globalAlpha = 1;
+      // Centre each line on the corner, but never past the card's edge —
+      // long German labels overhang on narrow cards otherwise.
+      const line = (text: string, y: number): void => {
+        const half = ctx.measureText(text).width / 2;
+        ctx.fillText(text, Math.max(half + 4, Math.min(S - half - 4, lx)), y);
+      };
       ctx.font = this.font(500, lf);
       this.spacing("0.14em");
       ctx.fillStyle = pal.label;
-      ctx.fillText(g.label, lx, ly - vf * 0.62);
+      line(g.label, ly - vf * 0.62);
       this.spacing("0px");
       ctx.font = this.font(500, vf);
       ctx.fillStyle = col;
-      ctx.fillText(g.value, lx, ly + vf * 0.36);
+      line(g.value, ly + vf * 0.36);
       ctx.font = this.font(400, sf);
       ctx.fillStyle = pal.label;
-      ctx.fillText(g.detail, lx, ly + vf * 0.36 + sf * 1.5);
+      line(g.detail, ly + vf * 0.36 + sf * 1.5);
     });
     ctx.globalAlpha = 1;
   }

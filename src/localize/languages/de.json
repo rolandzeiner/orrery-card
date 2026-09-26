@@ -25,7 +25,9 @@
     "now_label": "Zurück zu jetzt",
     "view": "Blickwinkel wechseln",
     "zoom_in": "Vergrößern",
-    "zoom_out": "Verkleinern"
+    "zoom_out": "Verkleinern",
+    "view_group": "Ansicht",
+    "time_group": "Zeit"
   },
   "speed": {
     "back_year": "1 Jahr/s zurück",

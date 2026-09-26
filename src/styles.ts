@@ -60,8 +60,11 @@ export const cardStyles = css`
     --orr-line: #222a3f;
     --orr-accent: var(--orrery-accent-color, #48c9e6);
     --orr-accent-2: var(--orrery-accent-2-color, #a878f0);
+    --orr-on-accent: #0a0e18;
     background: #0a0e18;
     color: var(--orr-ink);
+    /* Native pickers (speed list, calendar) open dark to match. */
+    color-scheme: dark;
   }
 
   /* ── Appearance: theme ───────────────────────────────────────────────
@@ -81,11 +84,14 @@ export const cardStyles = css`
     --orr-line: var(--divider-color, rgba(0, 0, 0, 0.12));
     --orr-accent: var(--orrery-accent-color, #0b7fa0);
     --orr-accent-2: var(--orrery-accent-2-color, #7a45d6);
+    --orr-on-accent: var(--ha-card-background, var(--card-background-color, #fff));
     color: var(--orr-ink);
+    color-scheme: light;
   }
   ha-card.theme.dark {
     --orr-accent: var(--orrery-accent-color, #48c9e6);
     --orr-accent-2: var(--orrery-accent-2-color, #a878f0);
+    color-scheme: dark;
   }
 
   .title {
@@ -128,13 +134,12 @@ export const cardStyles = css`
 
   .toast {
     position: absolute;
-    inset-block-start: var(--ha-space-3, 12px);
+    inset-block-start: calc(var(--ha-space-2, 8px) + 48px);
     inset-inline-start: 50%;
     transform: translateX(-50%);
     padding: var(--ha-space-1, 4px) var(--ha-space-3, 12px);
     border-radius: var(--ha-border-radius-pill, 9999px);
-    border: 1px solid var(--orr-line);
-    background: var(--orr-raise);
+    background: color-mix(in srgb, var(--orr-raise) 85%, transparent);
     color: var(--orr-ink);
     font-size: var(--ha-font-size-s, 0.857rem);
     white-space: nowrap;
@@ -142,14 +147,15 @@ export const cardStyles = css`
   }
 
   .readout {
-    margin: 0;
-    padding: var(--orr-pad-y) var(--orr-pad-x);
-    border-block-start: 1px solid var(--orr-line);
+    margin: 0 auto;
+    padding: var(--ha-space-2, 8px) var(--orr-pad-x) 0;
+    max-inline-size: 46ch;
+    text-align: center;
     color: var(--orr-muted);
     font-size: var(--ha-font-size-s, 0.857rem);
     line-height: var(--ha-line-height-normal, 1.6);
     font-variant-numeric: tabular-nums;
-    text-wrap: pretty;
+    text-wrap: balance;
   }
   .readout strong {
     color: var(--orr-accent-2);
@@ -159,97 +165,214 @@ export const cardStyles = css`
     color: var(--orr-accent);
   }
 
+  /* ── Controls ────────────────────────────────────────────────────────
+     Ghost controls: no border or fill at rest, a soft round wash on hover.
+     The play button is the one solid shape, in the accent colour. */
+  button {
+    appearance: none;
+    display: inline-grid;
+    place-items: center;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--ha-border-radius-pill, 9999px);
+    background: transparent;
+    color: var(--orr-muted);
+    font: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color var(--ha-animation-duration-fast, 150ms) ease,
+      background-color var(--ha-animation-duration-fast, 150ms) ease,
+      box-shadow var(--ha-animation-duration-fast, 150ms) ease,
+      transform var(--ha-animation-duration-fast, 150ms) ease;
+  }
+  button:hover {
+    color: var(--orr-ink);
+    background: color-mix(in srgb, var(--orr-ink) 9%, transparent);
+  }
+  button:active {
+    transform: scale(0.92);
+  }
+  button.icon {
+    inline-size: var(--orr-control-size);
+    block-size: var(--orr-control-size);
+  }
+  button.icon ha-icon {
+    --mdc-icon-size: 22px;
+  }
+
   .controls {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--orr-gap) var(--ha-space-3, 12px);
-    padding: var(--orr-pad-y) var(--orr-pad-x);
-    border-block-start: 1px solid var(--orr-line);
-  }
-  .group {
-    display: flex;
+    flex-direction: column;
     align-items: center;
     gap: var(--ha-space-1, 4px);
+    padding: var(--ha-space-3, 12px) var(--orr-pad-x) var(--ha-space-4, 16px);
   }
-  .spacer {
-    flex: 1 1 auto;
-  }
-  button,
-  select,
-  input {
-    box-sizing: border-box;
-    block-size: var(--orr-control-size);
-    border: 1px solid var(--orr-line);
-    border-radius: var(--orr-radius-md);
-    background: var(--orr-raise);
-    color: var(--orr-ink);
-    font: inherit;
-    font-size: var(--ha-font-size-s, 0.857rem);
-    font-variant-numeric: tabular-nums;
-  }
-  select,
-  input {
-    padding: 0 var(--ha-space-2, 8px);
-  }
-  button {
-    display: inline-flex;
+  .transport {
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--ha-space-1, 4px);
-    min-inline-size: var(--orr-control-size);
-    padding: 0 var(--ha-space-2, 8px);
-    cursor: pointer;
-    transition:
-      border-color var(--ha-animation-duration-fast, 150ms) ease,
-      color var(--ha-animation-duration-fast, 150ms) ease;
   }
-  button:hover:not(:disabled) {
-    border-color: var(--orr-muted);
-  }
-  button:disabled {
-    opacity: 0.45;
-    cursor: default;
-  }
-  button ha-icon {
-    --mdc-icon-size: 20px;
-  }
-  .play {
-    min-inline-size: 92px;
-    padding-inline-end: var(--ha-space-3, 12px);
-  }
-  .play.active,
-  .now[aria-pressed="true"] {
+  button.play {
+    inline-size: 52px;
+    block-size: 52px;
+    margin-inline: var(--ha-space-3, 12px);
     color: var(--orr-accent);
-    border-color: var(--orr-accent);
+    box-shadow: inset 0 0 0 1.5px var(--orr-accent);
+  }
+  button.play ha-icon {
+    --mdc-icon-size: 26px;
+  }
+  button.play:hover {
+    color: var(--orr-accent);
+    background: color-mix(in srgb, var(--orr-accent) 14%, transparent);
+  }
+  button.play.active {
+    color: var(--orr-on-accent);
+    background: var(--orr-accent);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--orr-accent) 45%, transparent);
+  }
+
+  .timeline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ha-space-1, 4px) var(--ha-space-2, 8px);
+  }
+  .chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    block-size: 32px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
+    color: var(--orr-muted);
+    font-size: var(--ha-font-size-s, 0.857rem);
+    font-variant-numeric: tabular-nums;
+    transition:
+      color var(--ha-animation-duration-fast, 150ms) ease,
+      background-color var(--ha-animation-duration-fast, 150ms) ease;
+  }
+  .chip:hover,
+  .chip:focus-within {
+    color: var(--orr-ink);
+    background: color-mix(in srgb, var(--orr-ink) 9%, transparent);
+  }
+  .chip select,
+  .chip input {
+    appearance: none;
+    box-sizing: border-box;
+    block-size: 100%;
+    margin: 0;
+    padding: 0 var(--ha-space-3, 12px);
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .chip select {
+    padding-inline-end: 30px;
+    /* Size to the chosen speed, not the longest option (Chromium, Safari
+       26+). Elsewhere the chip is just a little wider. */
+    field-sizing: content;
+  }
+  .chip .chevron {
+    position: absolute;
+    inset-inline-end: 10px;
+    pointer-events: none;
+    --mdc-icon-size: 16px;
+  }
+  .chip input::-webkit-calendar-picker-indicator {
+    opacity: 0.55;
+    cursor: pointer;
+  }
+  button.now {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--ha-space-2, 8px);
+    block-size: 32px;
+    padding: 0 var(--ha-space-3, 12px);
+    font-size: var(--ha-font-size-s, 0.857rem);
+    letter-spacing: 0.02em;
+  }
+  .now .dot {
+    inline-size: 7px;
+    block-size: 7px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.5px currentColor;
+  }
+  button.now[aria-pressed="true"] {
+    color: var(--orr-accent);
+  }
+  button.now[aria-pressed="true"] .dot {
+    background: var(--orr-accent);
+    box-shadow: 0 0 8px var(--orr-accent);
+  }
+
+  /* View controls float on the sky, in the empty band above the orbits. */
+  .viewbar {
+    position: absolute;
+    inset-block-start: var(--ha-space-2, 8px);
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--ha-border-radius-pill, 9999px);
+    background: color-mix(in srgb, var(--orr-raise) 70%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--orr-ink) 10%, transparent);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    opacity: 0.75;
+    transition: opacity var(--ha-animation-duration-fast, 150ms) ease;
+  }
+  .viewbar:hover,
+  .viewbar:focus-within {
+    opacity: 1;
+  }
+  .viewbar button.icon {
+    inline-size: 36px;
+    block-size: 36px;
+  }
+  .viewbar button.icon ha-icon {
+    --mdc-icon-size: 18px;
   }
 
   /* ── Narrow cards ─────────────────────────────────────────────────── */
   @container orrery-card (inline-size < 360px) {
     :host {
       --orr-pad-x: var(--ha-space-3, 12px);
-      --orr-pad-y: var(--ha-space-2, 8px);
+      --orr-control-size: 36px;
     }
-    .play {
-      min-inline-size: var(--orr-control-size);
-      padding-inline-end: var(--ha-space-2, 8px);
-    }
-    .play span {
-      display: none;
+    button.play {
+      inline-size: 46px;
+      block-size: 46px;
+      margin-inline: var(--ha-space-1, 4px);
     }
   }
 
   /* ── Accessibility primitives ─────────────────────────────────────── */
   button:focus-visible,
-  select:focus-visible,
-  input:focus-visible {
+  .chip:has(:focus-visible) {
     outline: 2px solid var(--orr-accent);
     outline-offset: 2px;
   }
+  .chip select:focus-visible,
+  .chip input:focus-visible {
+    outline: none;
+  }
   @media (forced-colors: active) {
+    /* Ghost controls have no edge of their own; give them one. */
+    button,
+    .chip {
+      border: 1px solid ButtonText;
+    }
     button:focus-visible,
-    select:focus-visible,
-    input:focus-visible,
+    .chip:has(:focus-visible),
     canvas:focus-visible {
       outline-color: CanvasText;
     }

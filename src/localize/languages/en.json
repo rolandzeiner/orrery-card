@@ -25,7 +25,9 @@
     "now_label": "Jump back to now",
     "view": "Change the viewing angle",
     "zoom_in": "Zoom in",
-    "zoom_out": "Zoom out"
+    "zoom_out": "Zoom out",
+    "view_group": "View",
+    "time_group": "Time"
   },
   "speed": {
     "back_year": "1 year/s back",
