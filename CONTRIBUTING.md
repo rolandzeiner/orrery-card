@@ -16,6 +16,7 @@ Day-to-day:
 npm run dev      # rolldown watch — rebuilds dist/orrery-card.js on save
 npm run build    # one-shot production build (rolldown, minified)
 npm test         # vitest unit suite
+npm run test:coverage   # same, plus coverage/coverage-final.json
 ```
 
 For live testing in Home Assistant, install the card through HACS once so the Lovelace resource exists, then copy each rebuilt `dist/orrery-card.js` over the installed file and hard-refresh the browser (⌘⇧R / Ctrl⇧R).
@@ -31,6 +32,8 @@ node -c dist/orrery-card.js      # syntax sanity-check
 ```
 
 Commit `dist/` together with your `src/` change. HACS serves the committed bundle directly, so a `src/` edit without a rebuild ships code that no longer matches the source. CI fails on the same check.
+
+For a code-health check, run `npm run test:coverage` and then `fallow audit`. fallow reads the coverage file from its default location, so its untested-complexity (CRAP) scores come from real coverage instead of an estimate.
 
 CI runs these five plus `npm audit --omit=dev --audit-level=high`, HACS plugin validation, a guard against stray backticks in Lit templates, and CodeQL.
 
@@ -48,9 +51,10 @@ CI runs these five plus `npm audit --omit=dev --audit-level=high`, HACS plugin v
 | `src/render/` | Canvas renderer, camera projection, distance scales, label placement, palette |
 | `src/astro/` | Planet table and the astronomy-engine wrappers (orbits, ticks, readouts) |
 | `src/format.ts` | Everything localised: dates, numbers, readout text |
+| `src/interaction.ts` | Keyboard map, pointer gestures, playback and date stepping — no DOM, so it's unit-tested directly |
 | `src/config.ts` | YAML validation, defaults, and the editor's fill-in / tidy-up of defaults |
 | `src/editor.ts`, `src/editor-schema.ts` | Visual editor: `ha-form` with the defaults filled in, saving only what changed |
-| `tests/` | vitest suites, all pure node — no DOM needed |
+| `tests/` | vitest suites. Most run in plain node; `card.test.ts` opts into happy-dom and drives the real element, with the canvas replaced by `tests/fake-canvas.ts` |
 
 The card only redraws when something changes. Keep it that way: a new animation must stop when the card is off screen, when the tab is hidden, and under `prefers-reduced-motion`.
 

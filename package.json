@@ -2,16 +2,19 @@
   "name": "orrery-card",
   "private": true,
   "version": "0.1.0",
-  "description": "Standalone Lovelace custom card — the solar system in 3D, with real planet positions for any date.",
+  "description": "Standalone Lovelace custom card \u2014 the solar system in 3D, with real planet positions for any date.",
   "type": "module",
   "scripts": {
     "build": "rolldown -c",
     "dev": "rolldown -c -w",
     "build:push": "rolldown -c && ./scripts/dev-push.sh --quiet",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage.enabled --coverage.provider=v8 --coverage.include=src/** --coverage.reporter=json --coverage.reporter=text-summary"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "5.0.1",
+    "happy-dom": "20.14.5",
     "rolldown": "1.2.9",
     "typescript": "7.0.2",
     "vitest": "5.0.1"
