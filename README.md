@@ -9,6 +9,25 @@ The solar system in 3D for your Home Assistant dashboard. The card shows where t
 
 It runs entirely in your browser. There's no integration to install and nothing is fetched from the internet.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/screenshots/card.webp" height="300" alt="Orrery Card in the Spock colour theme" />
+      <br/><em>Spock theme</em>
+    </td>
+    <td align="center" valign="top">
+      <img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/screenshots/card-2.webp" height="300" alt="Orrery Card in the Kenobi colour theme" />
+      <br/><em>Kenobi theme</em>
+    </td>
+    <td align="center" valign="top">
+      <img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/screenshots/card-config.webp" height="240" alt="The visual card editor" />
+      <br/><em>Card editor</em>
+    </td>
+  </tr>
+</table>
+
 ## Features
 
 - **Real positions for any date.** Planet positions come from [Astronomy Engine](https://github.com/cosinekitty/astronomy) (VSOP87) and are within 1 arcminute of NASA JPL data.
