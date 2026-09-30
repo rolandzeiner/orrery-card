@@ -29,6 +29,7 @@ export const DEFAULTS: ResolvedConfig = {
   showTrails: true,
   showBelt: true,
   showMoon: true,
+  showPluto: false,
   ambientMotion: true,
 };
 
@@ -42,6 +43,7 @@ const FLAGS = {
   show_trails: "showTrails",
   show_belt: "showBelt",
   show_moon: "showMoon",
+  show_pluto: "showPluto",
   ambient_motion: "ambientMotion",
 } as const satisfies Record<string, keyof ResolvedConfig>;
 

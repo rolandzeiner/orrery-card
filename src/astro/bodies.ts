@@ -31,7 +31,8 @@ export type PlanetKey =
   | "jupiter"
   | "saturn"
   | "uranus"
-  | "neptune";
+  | "neptune"
+  | "pluto";
 
 export const PLANETS: ReadonlyArray<PlanetDef> = [
   { body: Body.Mercury, key: "mercury", au: 0.387, period: 87.969, size: 2.3, ticks: { kind: "days", step: 10 }, labelSide: 1 },
@@ -44,8 +45,26 @@ export const PLANETS: ReadonlyArray<PlanetDef> = [
   { body: Body.Neptune, key: "neptune", au: 30.07, period: 60182, size: 3.8, ticks: { kind: "years", step: 10, labelEvery: 40 }, labelSide: 1 },
 ];
 
+/** Pluto, a dwarf planet, drawn only with `show_pluto`. Its orbit is
+ *  eccentric and tilted 17°: it runs from just inside Neptune's orbit
+ *  (29.7 AU) out to 49.3 AU, past the edge the scales are fitted to. */
+export const PLUTO: PlanetDef = {
+  body: Body.Pluto,
+  key: "pluto",
+  au: 39.48,
+  period: 90560,
+  size: 2,
+  ticks: { kind: "years", step: 10, labelEvery: 50 },
+  labelSide: 1,
+};
+
+const WITH_PLUTO: ReadonlyArray<PlanetDef> = [...PLANETS, PLUTO];
+
+/** The bodies the card draws, innermost first. */
+export const shownBodies = (showPluto: boolean): ReadonlyArray<PlanetDef> => (showPluto ? WITH_PLUTO : PLANETS);
+
 export const PLANET_BY_KEY: Readonly<Record<PlanetKey, PlanetDef>> = Object.fromEntries(
-  PLANETS.map((p) => [p.key, p]),
+  WITH_PLUTO.map((p) => [p.key, p]),
 ) as Record<PlanetKey, PlanetDef>;
 
 /** Aphelion of the outermost planet, in AU — the distance every scale is

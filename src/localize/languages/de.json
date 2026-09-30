@@ -57,7 +57,8 @@
     "jupiter": "Jupiter",
     "saturn": "Saturn",
     "uranus": "Uranus",
-    "neptune": "Neptun"
+    "neptune": "Neptun",
+    "pluto": "Pluto"
   },
   "editor": {
     "title": "Titel",
@@ -90,6 +91,8 @@
     "show_trails": "Planetenspuren",
     "show_belt": "Asteroidengürtel",
     "show_moon": "Mond",
+    "show_pluto": "Pluto",
+    "show_pluto_helper": "Ein Zwergplanet. Seine Bahn reicht über die des Neptun hinaus. Läuft sie über den Kartenrand, zoom heraus.",
     "ambient_motion": "Rotierende Sonne",
     "ambient_motion_helper": "Hält die Karte in Bewegung. Schalte das aus, um auf Wandtablets Strom zu sparen."
   }

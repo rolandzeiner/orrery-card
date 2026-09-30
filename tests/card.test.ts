@@ -218,6 +218,13 @@ describe("view input", () => {
     expect(card._selected).toBeNull();
   });
 
+  it("drops a Pluto selection when Pluto is switched off", async () => {
+    const card = await mount({ show_pluto: true });
+    card._selected = "pluto";
+    card.setConfig({ type: "custom:orrery-card", ambient_motion: false });
+    expect(card._selected).toBeNull();
+  });
+
   it("zooms on Ctrl + scroll and leaves plain scrolling to the page", async () => {
     const card = await mount();
     const canvas = $(card, "canvas");

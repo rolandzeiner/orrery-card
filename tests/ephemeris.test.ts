@@ -1,7 +1,7 @@
 import { Body } from "astronomy-engine";
 import { describe, expect, it } from "vitest";
 
-import { PLANET_BY_KEY } from "../src/astro/bodies";
+import { PLANET_BY_KEY, PLUTO } from "../src/astro/bodies";
 import {
   helio,
   makeTicks,
@@ -46,6 +46,14 @@ describe("orbits", () => {
     expect(orbit.pts).toHaveLength(120);
     // t0 sits half a period into the samples.
     expect(orbitIndex(orbit, earth, t)).toBeCloseTo(60, 5);
+  });
+
+  it("samples Pluto's orbit from inside Neptune's out to 49 AU", () => {
+    const radii = sampleOrbit(PLUTO, Date.UTC(2026, 8, 26)).pts.map((p) => Math.hypot(...p));
+    expect(Math.min(...radii)).toBeGreaterThan(29.5);
+    expect(Math.min(...radii)).toBeLessThan(30.07);
+    expect(Math.max(...radii)).toBeGreaterThan(49);
+    expect(Math.max(...radii)).toBeLessThan(49.5);
   });
 
   it("reuses a cached orbit instead of resampling", () => {
@@ -95,6 +103,13 @@ describe("readouts", () => {
     const sky = skySnapshot(fullMoon, [Body.Earth]);
     expect(sky.earthSunAu).toBeGreaterThan(0.983);
     expect(sky.earthSunAu).toBeLessThan(1.017);
+  });
+
+  it("finds Pluto in Capricornus, about 35 AU away, in 2026", () => {
+    const pluto = planetDetails(Body.Pluto, fullMoon);
+    expect(pluto.constellation).toBe("Capricornus");
+    expect(pluto.earthAu).toBeGreaterThan(34);
+    expect(pluto.earthAu).toBeLessThan(37);
   });
 
   it("finds Mars in Cancer on 26 September 2026", () => {
