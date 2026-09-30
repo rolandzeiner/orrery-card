@@ -13,11 +13,11 @@
     "test:coverage": "vitest run --coverage.enabled --coverage.provider=v8 --coverage.include=src/** --coverage.reporter=json --coverage.reporter=text-summary"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "5.0.1",
+    "@vitest/coverage-v8": "5.0.2",
     "happy-dom": "20.14.5",
-    "rolldown": "1.2.9",
+    "rolldown": "1.2.11",
     "typescript": "7.0.2",
-    "vitest": "5.0.1"
+    "vitest": "5.0.2"
   },
   "dependencies": {
     "astronomy-engine": "^2.1.19",
