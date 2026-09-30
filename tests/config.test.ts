@@ -15,6 +15,12 @@ describe("resolveConfig", () => {
     expect(cfg.showBelt).toBe(true);
   });
 
+  it("leaves Pluto off unless asked for", () => {
+    expect(resolveConfig({}).showPluto).toBe(false);
+    expect(resolveConfig({ show_pluto: true }).showPluto).toBe(true);
+    expect(() => resolveConfig({ show_pluto: "yes" })).toThrow(/"show_pluto"/);
+  });
+
   it("accepts a numeric tilt given as text, as the YAML editor can produce", () => {
     expect(resolveConfig({ tilt: "3.5" }).tilt).toBe(3.5);
   });

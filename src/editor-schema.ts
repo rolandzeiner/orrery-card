@@ -34,6 +34,8 @@ export function buildSchema(t: (key: string) => string): ReadonlyArray<HaFormSch
       flatten: true,
       schema: [
         { type: "grid", name: "", schema: FLAG_FIELDS.map((name) => ({ name, selector: { boolean: {} } })) },
+        // Outside the grid: it has a helper line, which a grid cell squeezes.
+        { name: "show_pluto", selector: { boolean: {} } },
         { name: "ambient_motion", selector: { boolean: {} } },
       ],
     },

@@ -9,6 +9,25 @@ The solar system in 3D for your Home Assistant dashboard. The card shows where t
 
 It runs entirely in your browser. There's no integration to install and nothing is fetched from the internet.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/screenshots/card.webp" height="300" alt="Orrery Card in the Spock colour theme" />
+      <br/><em>Spock theme</em>
+    </td>
+    <td align="center" valign="top">
+      <img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/screenshots/card-2.webp" height="300" alt="Orrery Card in the Kenobi colour theme" />
+      <br/><em>Kenobi theme</em>
+    </td>
+    <td align="center" valign="top">
+      <img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/screenshots/card-config.webp" height="240" alt="The visual card editor" />
+      <br/><em>Card editor</em>
+    </td>
+  </tr>
+</table>
+
 ## Features
 
 - **Real positions for any date.** Planet positions come from [Astronomy Engine](https://github.com/cosinekitty/astronomy) (VSOP87) and are within 1 arcminute of NASA JPL data.
@@ -18,6 +37,7 @@ It runs entirely in your browser. There's no integration to install and nothing 
 - **Time marks on every orbit.** Each tick is an equal step of time (10 days on Mercury, a year on Jupiter), so Mercury's uneven spacing shows it speeding up near the Sun. Earth's orbit is labelled with the months, and the current month is highlighted.
 - **Readouts in the corners:** Moon phase, the Sun–Earth distance, and how far away Mars and Jupiter are.
 - **Moon, asteroid belt, Saturn's ring.** The belt leaves the Kirkwood gaps open, and Saturn's ring is tilted at its real angle.
+- **Pluto, if you want it.** Turn it on to add the dwarf planet on its tilted, stretched orbit.
 - **Four colour themes.** *Vibe* (cyan and violet), *HA theme* (your own theme's colours), and two fan palettes, *Kenobi* and *Spock*.
 - **Two backgrounds.** *Space* is always dark, like a window onto the sky. *Follow the theme* draws onto your theme's card background, in light or dark mode.
 - **Visual editor**, and English and German built in.
@@ -55,7 +75,7 @@ That's all it needs. Every option below is optional.
 | --- | --- | --- |
 | `title` | none | Heading above the card. |
 | `scale` | `log` | How distances are drawn. `log` fits every planet on the card. `sqrt` compresses less. `true` is to scale, so you zoom in to see the inner planets. |
-| `tilt` | `1` | Orbit tilt, from `1` to `8`. At `1` the tilts are real, and they're small (7° at most). Higher values exaggerate them. |
+| `tilt` | `1` | Orbit tilt, from `1` to `8`. At `1` the tilts are real, and they're small: 7° at most for the planets, 17° for Pluto. Higher values exaggerate them. |
 | `view` | `all` | Zoom the card opens at: `all` planets or the `inner` four. |
 | `color_theme` | `vibe` | Colours for the planets, the Sun and the controls: `vibe`, `ha`, `kenobi` or `spock`. See [Colour themes](#colour-themes). |
 | `appearance` | `space` | Background. `space` is always dark. `theme` draws on your dashboard theme's card background. |
@@ -67,6 +87,7 @@ That's all it needs. Every option below is optional.
 | `show_trails` | `true` | A fading trail behind each planet. |
 | `show_belt` | `true` | The asteroid belt. |
 | `show_moon` | `true` | The Moon next to Earth. Its distance is exaggerated so you can see it; its direction is real. |
+| `show_pluto` | `false` | Pluto, the dwarf planet. Its orbit reaches past Neptune's, so on the `sqrt` and `true` scales part of it runs off the card until you zoom out. |
 | `ambient_motion` | `true` | Slowly rotates the Sun. Turn it off to save power on a wall tablet. It's always off if your device asks for reduced motion. |
 
 ### Examples

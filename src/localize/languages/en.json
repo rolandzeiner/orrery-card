@@ -57,7 +57,8 @@
     "jupiter": "Jupiter",
     "saturn": "Saturn",
     "uranus": "Uranus",
-    "neptune": "Neptune"
+    "neptune": "Neptune",
+    "pluto": "Pluto"
   },
   "editor": {
     "title": "Title",
@@ -90,6 +91,8 @@
     "show_trails": "Planet trails",
     "show_belt": "Asteroid belt",
     "show_moon": "Moon",
+    "show_pluto": "Pluto",
+    "show_pluto_helper": "A dwarf planet. Its orbit reaches past Neptune's. If it runs off the card, zoom out.",
     "ambient_motion": "Rotating Sun",
     "ambient_motion_helper": "Keeps the card moving. Turn it off to save power on wall tablets."
   }

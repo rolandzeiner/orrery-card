@@ -84,6 +84,8 @@ export class OrreryCard extends LitElement {
     const next = resolveConfig(config);
     const prev = this._config;
     this._config = next;
+    // A hidden body can't stay selected: the readout would keep describing it.
+    if (!next.showPluto && this._selected === "pluto") this._selected = null;
     if (next.scale !== prev.scale || next.tilt !== prev.tilt || next.view !== prev.view) {
       this._applyOptions();
       this._cam.zoom = this._openingZoom();
@@ -310,6 +312,7 @@ export class OrreryCard extends LitElement {
       showTrails: c.showTrails,
       showBelt: c.showBelt,
       showMoon: c.showMoon,
+      showPluto: c.showPluto,
       ambient: this._ambient(),
     };
   }

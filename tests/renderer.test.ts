@@ -1,6 +1,7 @@
 import { Body } from "astronomy-engine";
 import { describe, expect, it } from "vitest";
 
+import { shownBodies } from "../src/astro/bodies";
 import { helio } from "../src/astro/ephemeris";
 import { CardFormat } from "../src/format";
 import { chooseSpot } from "../src/render/labels";
@@ -28,6 +29,7 @@ const ALL_ON: RenderOptions = {
   showTrails: true,
   showBelt: true,
   showMoon: true,
+  showPluto: false,
   ambient: false,
 };
 
@@ -84,6 +86,25 @@ describe("OrreryRenderer.draw", () => {
     expect(fake.texts()).toEqual([]);
   });
 
+  it("draws Pluto only when it's switched on", () => {
+    const off = setup();
+    off.renderer.draw(frame(CAM));
+    expect(off.fake.texts()).not.toContain("PLUTO");
+
+    const on = setup(480, { ...ALL_ON, showPluto: true });
+    on.renderer.draw(frame(CAM));
+    expect(on.fake.texts()).toContain("PLUTO");
+  });
+
+  it("shows Pluto as soon as it's switched on, without waiting for time to move", () => {
+    const { fake, renderer } = setup();
+    renderer.draw(frame(CAM));
+    renderer.setOptions({ ...ALL_ON, showPluto: true });
+    fake.calls.length = 0;
+    renderer.draw(frame(CAM));
+    expect(fake.texts()).toContain("PLUTO");
+  });
+
   it("frosts the line-work behind the date, and only when the date is shown", () => {
     const shown = setup();
     shown.renderer.draw(frame({ az: 1.1, el: Math.PI / 2, zoom: 1 }));
@@ -120,6 +141,7 @@ describe("OrreryRenderer.draw", () => {
       [{ ambient: true }, { az: 0, el: Math.PI / 2, zoom: 1 }, null],
       [{ scale: "true" }, { az: 2, el: 0.05, zoom: 20 }, "mercury"],
       [{ scale: "sqrt", tilt: 8 }, { az: -1, el: 0.8, zoom: 3 }, "neptune"],
+      [{ scale: "true", showPluto: true, tilt: 8 }, { az: 0.3, el: 0.05, zoom: 0.5 }, "pluto"],
     ];
     for (const [opts, cam, selected] of cases) {
       const { renderer } = setup(420, { ...ALL_ON, ...opts });
@@ -173,6 +195,11 @@ describe("label priority and spots", () => {
     expect(labelPriority("mars").slice(0, 3)).toEqual(["mars", "earth", "mercury"]);
     expect(labelPriority(null)[0]).toBe("earth");
     expect(labelPriority("earth")).toHaveLength(8);
+  });
+
+  it("ranks Pluto last, after the planets, unless it's selected", () => {
+    expect(labelPriority(null, shownBodies(true)).at(-1)).toBe("pluto");
+    expect(labelPriority("pluto", shownBodies(true))[0]).toBe("pluto");
   });
 
   it("keeps the previous spot and falls back to it when nothing is free", () => {

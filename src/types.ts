@@ -48,6 +48,8 @@ export interface OrreryCardConfig extends LovelaceCardConfig {
   show_trails?: boolean;
   show_belt?: boolean;
   show_moon?: boolean;
+  /** Draw Pluto, the dwarf planet. Default false. */
+  show_pluto?: boolean;
   /** Slowly rotate the Sun. Off under prefers-reduced-motion regardless. */
   ambient_motion?: boolean;
 }
@@ -68,6 +70,7 @@ export interface ResolvedConfig {
   showTrails: boolean;
   showBelt: boolean;
   showMoon: boolean;
+  showPluto: boolean;
   ambientMotion: boolean;
 }
 

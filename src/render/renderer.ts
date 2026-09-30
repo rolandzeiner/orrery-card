@@ -2,7 +2,7 @@
 // whose bounds are the loop bounds, so `!` on those reads is safe.
 import { Body } from "astronomy-engine";
 
-import { MERCURY_PERIHELION_AU, PLANETS, type PlanetDef, type PlanetKey } from "../astro/bodies";
+import { MERCURY_PERIHELION_AU, PLANETS, shownBodies, type PlanetDef, type PlanetKey } from "../astro/bodies";
 import {
   OrbitCache,
   ORBIT_SAMPLES,
@@ -33,6 +33,7 @@ export interface RenderOptions {
   showTrails: boolean;
   showBelt: boolean;
   showMoon: boolean;
+  showPluto: boolean;
   /** Spin the Sun with the frame clock. */
   ambient: boolean;
 }
@@ -79,7 +80,6 @@ const BELT = makeBelt(760);
 const SUN = makeGeodesic();
 const SATURN_RING = ringPoints(SATURN_POLE, 48);
 const MOON_RING = ringPoints([0, 0, 1], 40);
-const BODIES = PLANETS.map((p) => p.body);
 /** Trail length as a share of the orbit. */
 const TRAIL = 0.08;
 /** Below this card size the corner readouts no longer fit. */
@@ -142,8 +142,8 @@ export function uprightAngle(tx: number, ty: number): number {
 /** Label priority: the selected planet, then Earth, then outwards from the
  *  Sun. Deliberately not depth order — that flips as planets pass each
  *  other, and the labels would jump with it. */
-export function labelPriority(selected: PlanetKey | null): PlanetKey[] {
-  const keys = PLANETS.map((p) => p.key);
+export function labelPriority(selected: PlanetKey | null, planets: ReadonlyArray<PlanetDef> = PLANETS): PlanetKey[] {
+  const keys = planets.map((p) => p.key);
   const rank = (k: PlanetKey): number => (k === selected ? -2 : k === "earth" ? -1 : keys.indexOf(k));
   return keys.sort((a, b) => rank(a) - rank(b));
 }
@@ -163,8 +163,10 @@ export class OrreryRenderer {
     showTrails: true,
     showBelt: true,
     showMoon: true,
+    showPluto: false,
     ambient: false,
   };
+  private planets: ReadonlyArray<PlanetDef> = PLANETS;
   private mapper = new WorldMapper("log", 1);
   private readonly cache = new OrbitCache();
   private readonly labels = new LabelPlacer();
@@ -224,6 +226,11 @@ export class OrreryRenderer {
   }
 
   setOptions(opts: RenderOptions): void {
+    if (opts.showPluto !== this.opts.showPluto) {
+      this.planets = shownBodies(opts.showPluto);
+      // The cached snapshot has no position for a body that just appeared.
+      this.sky = null;
+    }
     this.opts = opts;
     if (opts.scale !== this.mapper.kind || opts.tilt !== this.mapper.tilt) {
       this.mapper = new WorldMapper(opts.scale, opts.tilt);
@@ -257,7 +264,7 @@ export class OrreryRenderer {
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
 
-    if (!this.sky || this.sky.t !== frame.t) this.sky = skySnapshot(frame.t, BODIES);
+    if (!this.sky || this.sky.t !== frame.t) this.sky = skySnapshot(frame.t, this.planets.map((p) => p.body));
     const sky = this.sky;
     const proj = new Projector(frame.cam, S);
 
@@ -282,7 +289,7 @@ export class OrreryRenderer {
 
   private projectPlanets(proj: Projector, sky: SkySnapshot): void {
     this.screen.clear();
-    for (const p of PLANETS) {
+    for (const p of this.planets) {
       const pos = sky.pos.get(p.body);
       if (pos) this.screen.set(p.key, proj.project(this.mapper.toWorld(pos, this.w), [0, 0, 0, 1]));
     }
@@ -450,7 +457,7 @@ export class OrreryRenderer {
   }
 
   private drawOrbits(proj: Projector, frame: Frame, pal: Palette): void {
-    for (const p of PLANETS) {
+    for (const p of this.planets) {
       const sel = frame.selected === p.key;
       this.strokeOrbit(this.projectOrbit(p, proj, frame.t), sel, frame.cam.zoom, pal);
       if (this.opts.showTicks) this.drawTicks(p, proj, frame, sel, pal);
@@ -650,7 +657,7 @@ export class OrreryRenderer {
     const ctx = this.ctx;
     ctx.lineWidth = 1.8;
     ctx.lineCap = "round";
-    for (const p of PLANETS) {
+    for (const p of this.planets) {
       const scr = this.orbitScreens.get(p.key);
       const here = this.screen.get(p.key);
       if (!scr || !here) continue;
@@ -706,7 +713,7 @@ export class OrreryRenderer {
     const S = this.size;
     const sizeScale = Math.max(0.75, Math.min(1.35, S / 520));
     // Far to near, so nearer planets paint over farther ones.
-    const order = PLANETS.slice().sort(
+    const order = this.planets.slice().sort(
       (a, b) => (this.screen.get(b.key)?.[2] ?? 0) - (this.screen.get(a.key)?.[2] ?? 0),
     );
     this.dotRadius.clear();
@@ -820,7 +827,7 @@ export class OrreryRenderer {
     const fs = Math.max(9, Math.min(12.5, S * 0.019));
     ctx.font = this.font(500, fs);
     this.spacing("0.12em");
-    const items = this.labelItems(labelPriority(selected), fs);
+    const items = this.labelItems(labelPriority(selected, this.planets), fs);
     const placed = this.labels.place(items, this.labelObstacles(proj), { x: 2, y: 2, w: S - 4, h: S - 4 });
 
     ctx.textAlign = "left";
