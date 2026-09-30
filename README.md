@@ -47,6 +47,10 @@ It runs entirely in your browser. There's no integration to install and nothing 
 
 ### HACS (recommended)
 
+[![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rolandzeiner&repository=orrery-card&category=plugin)
+
+Or add it by hand:
+
 1. In HACS, open the menu (⋮) and choose **Custom repositories**.
 2. Add `https://github.com/rolandzeiner/orrery-card` with the type **Dashboard**.
 3. Find **Orrery Card** in HACS and download it.
