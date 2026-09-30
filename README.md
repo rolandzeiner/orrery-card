@@ -4,6 +4,7 @@
 [![Version](https://img.shields.io/github/v/release/rolandzeiner/orrery-card?label=version&color=blue)](https://github.com/rolandzeiner/orrery-card/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![vibe-coded](https://img.shields.io/badge/vibe-coded-ff69b4?logo=musicbrainz&logoColor=white)](https://en.wikipedia.org/wiki/Vibe_coding)
+[![Live demo](https://img.shields.io/badge/live-demo-2196F3.svg)](https://demo.rolandzeiner.at/#orrery)
 
 The solar system in 3D for your Home Assistant dashboard. The card shows where the eight planets are right now, or on any date between 1800 and 2200. Drag it to turn the view, tap a planet to see how far away it is, and play time forward to watch the orbits move.
 
