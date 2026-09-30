@@ -158,7 +158,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Credits
 
-Positions are calculated with [Astronomy Engine](https://github.com/cosinekitty/astronomy) by Don Cross (MIT).
+- [Astronomy Engine](https://github.com/cosinekitty/astronomy) by Don Cross (MIT) calculates the positions. It's based on the VSOP87 planetary theory by P. Bretagnon and G. Francou, and models Pluto with its own numerical integration.
+- [Lit](https://lit.dev) by Google (BSD-3-Clause) runs the card.
+
+Both licenses are permissive, and their copyright notices are kept inside the released `orrery-card.js`. See [CONTRIBUTING.md](CONTRIBUTING.md#third-party-licenses).
 
 ## License
 

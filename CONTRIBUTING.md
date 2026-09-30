@@ -74,6 +74,24 @@ The bundle is built by **Rolldown** (`rolldown.config.mjs`), which handles trans
 - **`dropConsole` stays `false`.** It's all-or-nothing, and the version banner in the console is how you check which bundle the browser loaded.
 - **Decorators are not configured.** Rolldown reads `tsconfig.json` and enables Lit's legacy decorators from it.
 
+## Third-party licenses
+
+Both runtime dependencies are bundled into `dist/orrery-card.js`, so their notices have to ship with it.
+
+| Package | License | Notice in the bundle |
+| --- | --- | --- |
+| `astronomy-engine` (Don Cross) | MIT | `@preserve` block with the full license text |
+| `lit` and its `@lit/*` packages (Google) | BSD-3-Clause | `@license` / `SPDX-License-Identifier` comments |
+
+Both are compatible with this repo's MIT license. `comments: { legal: true }` in `rolldown.config.mjs` is what keeps those comments in the minified bundle, so don't remove it. After a dependency change, check that they're still there:
+
+```bash
+grep -c "Don Cross" dist/orrery-card.js
+grep -c "BSD-3-Clause" dist/orrery-card.js
+```
+
+A new dependency must have a license compatible with MIT, and its notice has to survive the build.
+
 ## Style
 
 - TypeScript strict. The `tsconfig.json` flags are not negotiable.
