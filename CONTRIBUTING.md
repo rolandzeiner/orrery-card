@@ -7,16 +7,16 @@ Thanks for considering a patch. Bug fixes, new options and language packs are al
 ```bash
 git clone https://github.com/rolandzeiner/orrery-card.git
 cd orrery-card
-npm install
+npm ci           # Node ^24.11 or 26+, npm 11+
 ```
 
 Day-to-day:
 
 ```bash
-npm run dev      # rolldown watch — rebuilds dist/orrery-card.js on save
-npm run build    # one-shot production build (rolldown, minified)
-npm test         # vitest unit suite
-npm run test:coverage   # same, plus coverage/coverage-final.json
+npm run dev      # vp build --watch — rebuilds dist/orrery-card.js on save (unminified, with a sourcemap)
+npm run build    # = vp build; one-shot production build (minified)
+npm test         # = vp test run, the unit suite
+npm run check    # = vp check; format, lint and strict type-check
 ```
 
 For live testing in Home Assistant, install the card through HACS once so the Lovelace resource exists, then copy each rebuilt `dist/orrery-card.js` over the installed file and hard-refresh the browser (⌘⇧R / Ctrl⇧R).
@@ -24,18 +24,28 @@ For live testing in Home Assistant, install the card through HACS once so the Lo
 ## Verification gate (must pass before a PR)
 
 ```bash
-npm test                         # vitest unit suite
-npx tsc --noEmit                 # strict type-check (the only type-check)
-npm run build                    # rolldown must succeed clean
+npm test                         # = vp test run, the unit suite
+npx vp check                     # format, lint and strict type-check
+npm run build                    # vp build must succeed clean
 git diff --exit-code -- dist/    # committed bundle must match that build
 node -c dist/orrery-card.js      # syntax sanity-check
 ```
 
 Commit `dist/` together with your `src/` change. HACS serves the committed bundle directly, so a `src/` edit without a rebuild ships code that no longer matches the source. CI fails on the same check.
 
-For a code-health check, run `npm run test:coverage` and then `fallow audit`. fallow reads the coverage file from its default location, so its untested-complexity (CRAP) scores come from real coverage instead of an estimate.
+CI runs these five plus `npm audit --omit=dev --audit-level=high`, HACS plugin validation and CodeQL.
 
-CI runs these five plus `npm audit --omit=dev --audit-level=high`, HACS plugin validation, a guard against stray backticks in Lit templates, and CodeQL.
+## Coverage
+
+The coverage provider is not a dependency. To measure coverage, install it at the Vitest version Vite+ bundles (`npx vp toolchain` names it) without saving it, then run:
+
+```bash
+npm i --no-save @vitest/coverage-v8@<that version>
+npx vp test run --coverage --coverage.provider=v8 \
+  --coverage.reporter=json --coverage.reporter=text-summary '--coverage.include=src/**'
+```
+
+That prints a summary and writes `coverage/coverage-final.json` (gitignored). The next `npm ci` removes the provider again. For a code-health check, run `fallow audit` afterwards: it reads that file from its default location, so its untested-complexity (CRAP) scores come from real coverage instead of an estimate.
 
 ## Branching
 
@@ -54,7 +64,7 @@ CI runs these five plus `npm audit --omit=dev --audit-level=high`, HACS plugin v
 | `src/interaction.ts` | Keyboard map, pointer gestures, playback and date stepping — no DOM, so it's unit-tested directly |
 | `src/config.ts` | YAML validation, defaults, and the editor's fill-in / tidy-up of defaults |
 | `src/editor.ts`, `src/editor-schema.ts` | Visual editor: `ha-form` with the defaults filled in, saving only what changed |
-| `tests/` | vitest suites. Most run in plain node; `card.test.ts` opts into happy-dom and drives the real element, with the canvas replaced by `tests/fake-canvas.ts` |
+| `tests/` | Vitest suites, run by `vp test`. Most run in plain node; `card.test.ts` opts into happy-dom and drives the real element, with the canvas replaced by `tests/fake-canvas.ts`. `toolchain.test.ts` guards the `vite` override (see *Card build*) |
 
 The card only redraws when something changes. Keep it that way: a new animation must stop when the card is off screen, when the tab is hidden, and under `prefers-reduced-motion`.
 
@@ -68,11 +78,19 @@ Month, weekday and number formats come from the browser's `Intl`, so they don't 
 
 ## Card build
 
-The bundle is built by **Rolldown** (`rolldown.config.mjs`), which handles transpilation, minification, module resolution and JSON natively. Three settings in that config fail silently if changed:
+`vite.config.ts` holds the whole card toolchain, run through [Vite+](https://viteplus.dev/) (`vp`): `vp build` (Vite library mode on Rolldown), `vp test` (Vitest), and `vp check` (Oxfmt + Oxlint + type-check). The only `devDependencies` are `vite-plus` and `happy-dom`. Vitest, Rolldown and the type-checker all ship inside `vite-plus`, and `typescript` is not installed.
+
+Five things in that config fail silently if changed:
 
 - The banner must be a **legal** comment, `/*! ... */`, with `comments: { legal: true }`. A `//` banner is stripped by the minifier without warning.
-- **`dropConsole` stays `false`.** It's all-or-nothing, and the version banner in the console is how you check which bundle the browser loaded.
+- **`minify` lives on `rolldownOptions.output`, with `dropConsole: false`.** Vite's library mode skips whitespace minification for ES output, so `build.minify` alone ships a larger bundle. `dropConsole` is all-or-nothing, and the version banner in the console is how you check which bundle the browser loaded.
+- **Dev vs prod comes from `--mode development`** (`npm run dev`). A plain `vp build` is production: minified, no sourcemap.
+- **`fmt.embeddedLanguageFormatting` stays `"off"`.** Otherwise Oxfmt reformats Lit `html`/`css` templates and changes the whitespace inside rendered elements.
 - **Decorators are not configured.** Rolldown reads `tsconfig.json` and enables Lit's legacy decorators from it.
+
+**The `vite` override in `package.json` must name the same version as `vite-plus`.** It keeps npm from installing upstream Vite next to Vite+'s core. Dependabot bumps `vite-plus` but not the override, and `tests/toolchain.test.ts` fails until you bump both.
+
+The build does not type-check. `vp check` is the only thing between a type error and a green build.
 
 ## Third-party licenses
 
@@ -83,7 +101,7 @@ Both runtime dependencies are bundled into `dist/orrery-card.js`, so their notic
 | `astronomy-engine` (Don Cross) | MIT | `@preserve` block with the full license text |
 | `lit` and its `@lit/*` packages (Google) | BSD-3-Clause | `@license` / `SPDX-License-Identifier` comments |
 
-Both are compatible with this repo's MIT license. `comments: { legal: true }` in `rolldown.config.mjs` is what keeps those comments in the minified bundle, so don't remove it. After a dependency change, check that they're still there:
+Both are compatible with this repo's MIT license. `comments: { legal: true }` in `vite.config.ts` is what keeps those comments in the minified bundle, so don't remove it. After a dependency change, check that they're still there:
 
 ```bash
 grep -c "Don Cross" dist/orrery-card.js

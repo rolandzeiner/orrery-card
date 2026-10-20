@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import en from "../src/localize/languages/en.json";
 import de from "../src/localize/languages/de.json";
@@ -17,7 +17,8 @@ function flatten(dict: Dict, prefix = ""): Map<string, string> {
   return out;
 }
 
-const placeholders = (s: string): string[] => [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).sort();
+const placeholders = (s: string): string[] =>
+  [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).sort();
 
 describe("translations", () => {
   const enKeys = flatten(en as Dict);

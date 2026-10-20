@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { YAML_DEFAULTS } from "../src/config";
 import { buildSchema } from "../src/editor-schema";
@@ -23,7 +23,8 @@ describe("editor schema", () => {
       for (const f of fields(schema)) {
         expect(t(f.name), f.name).not.toBe(`editor.${f.name}`);
         if ("selector" in f && "select" in f.selector) {
-          for (const o of f.selector.select.options) expect(o.label, `${f.name}=${o.value}`).not.toMatch(/^editor\./);
+          for (const o of f.selector.select.options)
+            expect(o.label, `${f.name}=${o.value}`).not.toMatch(/^editor\./);
         }
       }
     });

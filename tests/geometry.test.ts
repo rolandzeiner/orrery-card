@@ -1,14 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
-import { FIT, Projector, clampElevation, clampZoom, fitSquare, ZOOM_MAX, ZOOM_MIN } from "../src/render/camera";
+import {
+  FIT,
+  Projector,
+  clampElevation,
+  clampZoom,
+  fitSquare,
+  ZOOM_MAX,
+  ZOOM_MIN,
+} from "../src/render/camera";
 import { scaleDistance, WorldMapper } from "../src/render/scale";
 
 describe("WorldMapper", () => {
-  it.each(["log", "sqrt", "true"] as const)("puts Neptune's orbit at radius ~1 on the %s scale", (kind) => {
-    const m = new WorldMapper(kind, 1);
-    expect(m.radius(30.07)).toBeGreaterThan(0.98);
-    expect(m.radius(30.07)).toBeLessThanOrEqual(1);
-  });
+  it.each(["log", "sqrt", "true"] as const)(
+    "puts Neptune's orbit at radius ~1 on the %s scale",
+    (kind) => {
+      const m = new WorldMapper(kind, 1);
+      expect(m.radius(30.07)).toBeGreaterThan(0.98);
+      expect(m.radius(30.07)).toBeLessThanOrEqual(1);
+    },
+  );
 
   it("keeps distances in order on every scale", () => {
     for (const kind of ["log", "sqrt", "true"] as const) {

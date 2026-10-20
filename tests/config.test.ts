@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { DEFAULTS, resolveConfig, tidyConfig, withDefaults, YAML_DEFAULTS } from "../src/config";
 
@@ -27,7 +27,8 @@ describe("resolveConfig", () => {
 
   it("accepts every colour theme, defaulting to Vibe", () => {
     expect(resolveConfig({}).colorTheme).toBe("vibe");
-    for (const t of ["vibe", "ha", "kenobi", "spock"]) expect(resolveConfig({ color_theme: t }).colorTheme).toBe(t);
+    for (const t of ["vibe", "ha", "kenobi", "spock"])
+      expect(resolveConfig({ color_theme: t }).colorTheme).toBe(t);
   });
 
   it("trims the title", () => {
@@ -65,21 +66,35 @@ describe("editor round trip", () => {
   });
 
   it("treats cleared values as unset rather than blanking the default", () => {
-    expect(withDefaults({ scale: "", show_belt: null, tilt: undefined })).toMatchObject({ scale: "log", show_belt: true, tilt: 1 });
+    expect(withDefaults({ scale: "", show_belt: null, tilt: undefined })).toMatchObject({
+      scale: "log",
+      show_belt: true,
+      tilt: 1,
+    });
   });
 
   it("keeps what the user set over the defaults", () => {
-    expect(withDefaults({ show_belt: false, scale: "true" })).toMatchObject({ show_belt: false, scale: "true" });
+    expect(withDefaults({ show_belt: false, scale: "true" })).toMatchObject({
+      show_belt: false,
+      scale: "true",
+    });
   });
 
   it("saves only what differs from the defaults, with type first", () => {
-    const edited = { ...withDefaults({ type: "custom:orrery-card" }), show_belt: false, tilt: 3, title: "" };
+    const edited = {
+      ...withDefaults({ type: "custom:orrery-card" }),
+      show_belt: false,
+      tilt: 3,
+      title: "",
+    };
     expect(tidyConfig(edited)).toEqual({ type: "custom:orrery-card", show_belt: false, tilt: 3 });
     expect(Object.keys(tidyConfig(edited))[0]).toBe("type");
   });
 
   it("drops cleared fields", () => {
-    expect(tidyConfig({ type: "custom:orrery-card", scale: "", title: "", view: undefined })).toEqual({
+    expect(
+      tidyConfig({ type: "custom:orrery-card", scale: "", title: "", view: undefined }),
+    ).toEqual({
       type: "custom:orrery-card",
     });
   });

@@ -1,5 +1,5 @@
 import { Body } from "astronomy-engine";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { shownBodies } from "../src/astro/bodies";
 import { helio } from "../src/astro/ephemeris";
@@ -153,7 +153,10 @@ describe("OrreryRenderer.draw", () => {
     const size = 480;
     const { renderer } = setup(size);
     renderer.draw(frame(CAM));
-    const p = new Projector(CAM, size).project(new WorldMapper("log", 1).toWorld(helio(Body.Earth, T)), [0, 0, 0, 1]);
+    const p = new Projector(CAM, size).project(
+      new WorldMapper("log", 1).toWorld(helio(Body.Earth, T)),
+      [0, 0, 0, 1],
+    );
     expect(renderer.pick(p[0] + 2, p[1] - 2)).toBe("earth");
     expect(renderer.pick(2, 2)).toBeNull();
   });

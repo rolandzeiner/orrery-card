@@ -1,5 +1,5 @@
 import { Body } from "astronomy-engine";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { PLANET_BY_KEY, PLUTO } from "../src/astro/bodies";
 import {
@@ -25,12 +25,18 @@ const PRECESSION_2026 = (26 * 50.29) / 3600;
 describe("helio", () => {
   it("puts Earth opposite the Sun on the March equinox", () => {
     // Equinox 2026-03-20 14:46 UTC.
-    expect(longitude(helio(Body.Earth, Date.UTC(2026, 2, 20, 14, 46)))).toBeCloseTo(180 - PRECESSION_2026, 1);
+    expect(longitude(helio(Body.Earth, Date.UTC(2026, 2, 20, 14, 46)))).toBeCloseTo(
+      180 - PRECESSION_2026,
+      1,
+    );
   });
 
   it("puts Earth a quarter turn on at the June solstice", () => {
     // Solstice 2026-06-21 08:24 UTC.
-    expect(longitude(helio(Body.Earth, Date.UTC(2026, 5, 21, 8, 24)))).toBeCloseTo(270 - PRECESSION_2026, 1);
+    expect(longitude(helio(Body.Earth, Date.UTC(2026, 5, 21, 8, 24)))).toBeCloseTo(
+      270 - PRECESSION_2026,
+      1,
+    );
   });
 
   it("keeps Earth on the ecliptic plane", () => {
@@ -70,14 +76,18 @@ describe("makeTicks", () => {
   it("labels Earth's orbit with each month once", () => {
     const labels = makeTicks(PLANET_BY_KEY.earth, t).filter((k) => k.label?.kind === "month");
     expect(labels).toHaveLength(12);
-    const months = labels.map((k) => (k.label?.kind === "month" ? k.label.month : -1)).sort((a, b) => a - b);
+    const months = labels
+      .map((k) => (k.label?.kind === "month" ? k.label.month : -1))
+      .sort((a, b) => a - b);
     expect(months).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 
   it("ticks Jupiter yearly on 1 January, labelling every year", () => {
     const ticks = makeTicks(PLANET_BY_KEY.jupiter, t);
     expect(ticks.length).toBeGreaterThanOrEqual(11);
-    expect(ticks.every((k) => new Date(k.t).getUTCMonth() === 0 && new Date(k.t).getUTCDate() === 1)).toBe(true);
+    expect(
+      ticks.every((k) => new Date(k.t).getUTCMonth() === 0 && new Date(k.t).getUTCDate() === 1),
+    ).toBe(true);
     expect(ticks.every((k) => k.label?.kind === "year")).toBe(true);
   });
 
