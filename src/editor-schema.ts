@@ -16,14 +16,24 @@ export function buildSchema(t: (key: string) => string): ReadonlyArray<HaFormSch
   const select = (name: string, values: ReadonlyArray<string>): HaFormSchema => ({
     name,
     selector: {
-      select: { mode: "dropdown", options: values.map((v) => ({ value: v, label: t(`${name}_${v}`) })) },
+      select: {
+        mode: "dropdown",
+        options: values.map((v) => ({ value: v, label: t(`${name}_${v}`) })),
+      },
     },
   });
   return [
     { name: "title", selector: { text: {} } },
-    { type: "grid", name: "", schema: [select("color_theme", COLOR_THEMES), select("appearance", ["space", "theme"])] },
+    {
+      type: "grid",
+      name: "",
+      schema: [select("color_theme", COLOR_THEMES), select("appearance", ["space", "theme"])],
+    },
     select("scale", SCALES),
-    { name: "tilt", selector: { number: { min: TILT_MIN, max: TILT_MAX, step: 0.5, mode: "slider" } } },
+    {
+      name: "tilt",
+      selector: { number: { min: TILT_MIN, max: TILT_MAX, step: 0.5, mode: "slider" } },
+    },
     select("view", ["all", "inner"]),
     {
       type: "expandable",
@@ -33,7 +43,11 @@ export function buildSchema(t: (key: string) => string): ReadonlyArray<HaFormSch
       // card never sees them (ha-lovelace-card, expandable footgun).
       flatten: true,
       schema: [
-        { type: "grid", name: "", schema: FLAG_FIELDS.map((name) => ({ name, selector: { boolean: {} } })) },
+        {
+          type: "grid",
+          name: "",
+          schema: FLAG_FIELDS.map((name) => ({ name, selector: { boolean: {} } })),
+        },
         // Outside the grid: it has a helper line, which a grid cell squeezes.
         { name: "show_pluto", selector: { boolean: {} } },
         { name: "ambient_motion", selector: { boolean: {} } },

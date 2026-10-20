@@ -19,7 +19,8 @@ export type SpeedKey = (typeof SPEEDS)[number]["key"];
 export const DEFAULT_SPEED: SpeedKey = "month";
 
 /** Days of sky time per second of playback. */
-export const speedDays = (key: SpeedKey): number => SPEEDS.find((s) => s.key === key)?.days ?? 30.44;
+export const speedDays = (key: SpeedKey): number =>
+  SPEEDS.find((s) => s.key === key)?.days ?? 30.44;
 
 /** Ranges the corner arcs fill across — each quantity's real extremes. */
 const RANGES = {
@@ -66,8 +67,15 @@ export class CardFormat implements Texts {
   ) {
     const tz = timeZone ? { timeZone } : {};
     const monthFmt = new Intl.DateTimeFormat(lang, { month: "short", timeZone: "UTC" });
-    this.months = Array.from({ length: 12 }, (_, m) => clean(monthFmt.format(Date.UTC(2001, m, 15))));
-    this.parts = new Intl.DateTimeFormat("en-US", { ...tz, year: "numeric", month: "numeric", day: "numeric" });
+    this.months = Array.from({ length: 12 }, (_, m) =>
+      clean(monthFmt.format(Date.UTC(2001, m, 15))),
+    );
+    this.parts = new Intl.DateTimeFormat("en-US", {
+      ...tz,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
     this.time = new Intl.DateTimeFormat(lang, {
       ...tz,
       hour: "numeric",
@@ -75,7 +83,12 @@ export class CardFormat implements Texts {
       ...(hour12 === undefined ? {} : { hour12 }),
     });
     this.weekday = new Intl.DateTimeFormat(lang, { ...tz, weekday: "short" });
-    this.iso = new Intl.DateTimeFormat("en-CA", { ...tz, year: "numeric", month: "2-digit", day: "2-digit" });
+    this.iso = new Intl.DateTimeFormat("en-CA", {
+      ...tz,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
     this.relative = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
     this.percent = new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 });
   }
@@ -87,7 +100,10 @@ export class CardFormat implements Texts {
   num(value: number, digits: number): string {
     let f = this.numbers.get(digits);
     if (!f) {
-      f = new Intl.NumberFormat(this.lang, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+      f = new Intl.NumberFormat(this.lang, {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      });
       this.numbers.set(digits, f);
     }
     return f.format(value);
@@ -148,7 +164,10 @@ export class CardFormat implements Texts {
     return this.relative.format(Math.round(days / 365.25), "year");
   }
 
-  dateLine(t: number, state: { live: boolean; playing: boolean; speed: SpeedKey; now: number }): DateLine {
+  dateLine(
+    t: number,
+    state: { live: boolean; playing: boolean; speed: SpeedKey; now: number },
+  ): DateLine {
     const [year, month, day] = this.ymd(t);
     const tag = state.live
       ? this.t("card.live")
@@ -198,14 +217,18 @@ export class CardFormat implements Texts {
       {
         label: upper("gauge.earth_mars"),
         value: this.au(sky.earthMarsAu),
-        detail: this.t("card.light_minutes", { value: Math.round(lightSeconds(sky.earthMarsAu) / 60) }),
+        detail: this.t("card.light_minutes", {
+          value: Math.round(lightSeconds(sky.earthMarsAu) / 60),
+        }),
         fraction: fraction(sky.earthMarsAu, RANGES.earthMars),
         tone: "accent",
       },
       {
         label: upper("gauge.earth_jupiter"),
         value: this.au(sky.earthJupiterAu),
-        detail: this.t("card.light_minutes", { value: Math.round(lightSeconds(sky.earthJupiterAu) / 60) }),
+        detail: this.t("card.light_minutes", {
+          value: Math.round(lightSeconds(sky.earthJupiterAu) / 60),
+        }),
         fraction: fraction(sky.earthJupiterAu, RANGES.earthJupiter),
         tone: "accent2",
       },

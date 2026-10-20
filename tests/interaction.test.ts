@@ -1,7 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { DAY_MS, MAX_TIME, MIN_TIME } from "../src/const";
-import { advanceTime, keyCommand, moveToDate, stepTime, TAP_SLOP, ViewGesture } from "../src/interaction";
+import {
+  advanceTime,
+  keyCommand,
+  moveToDate,
+  stepTime,
+  TAP_SLOP,
+  ViewGesture,
+} from "../src/interaction";
 
 const T = Date.UTC(2026, 8, 26, 12);
 
@@ -18,7 +25,9 @@ describe("time", () => {
   });
 
   it("steps by calendar months and by days", () => {
-    expect(new Date(stepTime(Date.UTC(2026, 0, 31), 0, 1)).toISOString()).toBe("2026-03-03T00:00:00.000Z");
+    expect(new Date(stepTime(Date.UTC(2026, 0, 31), 0, 1)).toISOString()).toBe(
+      "2026-03-03T00:00:00.000Z",
+    );
     expect(stepTime(T, -1, 0)).toBe(T - DAY_MS);
     expect(stepTime(MIN_TIME, 0, -1)).toBe(MIN_TIME);
   });

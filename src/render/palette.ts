@@ -86,7 +86,16 @@ export function readPalette(probe: HTMLElement): Palette | null {
     font: getComputedStyle(probe).fontFamily || "sans-serif",
   };
   probe.style.color = "";
-  const required = [palette.orbit, palette.label, palette.ink, palette.accent, palette.accent2, palette.earthCore, palette.moon, palette.plate];
+  const required = [
+    palette.orbit,
+    palette.label,
+    palette.ink,
+    palette.accent,
+    palette.accent2,
+    palette.earthCore,
+    palette.moon,
+    palette.plate,
+  ];
   return required.every(Boolean) ? palette : null;
 }
 

@@ -20,16 +20,9 @@ const languages: Record<string, Record<string, unknown>> = Object.fromEntries(
   LANGUAGE_REGISTRY.map((l) => [l.code, l.dict]),
 );
 
-function resolveTranslation(
-  path: string,
-  dictionary: Record<string, unknown>,
-): string | undefined {
+function resolveTranslation(path: string, dictionary: Record<string, unknown>): string | undefined {
   const value = path.split(".").reduce<unknown>((acc, key) => {
-    if (
-      acc &&
-      typeof acc === "object" &&
-      key in (acc as Record<string, unknown>)
-    ) {
+    if (acc && typeof acc === "object" && key in (acc as Record<string, unknown>)) {
       return (acc as Record<string, unknown>)[key];
     }
     return undefined;
@@ -42,7 +35,7 @@ function resolveTranslation(
  *  as `lang`. Optional `vars` does `{name}` substitution. */
 export function localize(
   key: string,
-  lang: string | undefined = undefined,
+  lang?: string,
   vars?: Record<string, string | number>,
 ): string {
   // Strip BCP-47 region — dicts are ISO-639-1 lowercase.
@@ -61,10 +54,7 @@ export function localize(
       // like "Pay $50 to $&" must render literally, not as the matched
       // `{value}` placeholder.
       const replacement = String(v);
-      translated = translated.replace(
-        new RegExp(`\\{${k}\\}`, "g"),
-        () => replacement,
-      );
+      translated = translated.replace(new RegExp(`\\{${k}\\}`, "g"), () => replacement);
     }
   }
   return translated;
@@ -73,10 +63,7 @@ export function localize(
 /** Resolve UI language: `hass.locale.language` → `hass.language` →
  *  `navigator.language` → `"en"`. */
 export function resolveLang(
-  hass:
-    | { locale?: { language?: string }; language?: string }
-    | undefined
-    | null,
+  hass: { locale?: { language?: string }; language?: string } | undefined | null,
 ): string {
   return (
     hass?.locale?.language ??

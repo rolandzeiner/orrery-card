@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { candidates, LabelPlacer, RETURN_MARGIN, type LabelItem } from "../src/render/labels";
 

@@ -116,7 +116,11 @@ export function makeTicks(p: PlanetDef, center: number): Tick[] {
     const y1 = new Date(hi).getUTCFullYear();
     for (let y = Math.ceil(y0 / spec.step) * spec.step; y <= y1; y += spec.step) {
       const labelled = y % spec.labelEvery === 0;
-      add(Date.UTC(y, 0, 1), labelled, labelled ? { kind: "year", year: y, span: spec.labelEvery } : null);
+      add(
+        Date.UTC(y, 0, 1),
+        labelled,
+        labelled ? { kind: "year", year: y, span: spec.labelEvery } : null,
+      );
     }
   }
   return out;

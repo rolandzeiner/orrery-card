@@ -7,7 +7,15 @@ import { helio, planetDetails } from "./astro/ephemeris";
 import { DEFAULTS, resolveConfig } from "./config";
 import { CARD_NAME, CARD_TAG, CARD_VERSION } from "./const";
 import "./editor";
-import { CardFormat, DEFAULT_SPEED, resolveHour12, resolveTimeZone, SPEEDS, speedDays, type SpeedKey } from "./format";
+import {
+  CardFormat,
+  DEFAULT_SPEED,
+  resolveHour12,
+  resolveTimeZone,
+  SPEEDS,
+  speedDays,
+  type SpeedKey,
+} from "./format";
 import { advanceTime, keyCommand, moveToDate, stepTime, ViewGesture } from "./interaction";
 import { resolveLang } from "./localize/localize";
 import {
@@ -207,7 +215,9 @@ export class OrreryCard extends LitElement {
     const stage = this._stage;
     if (!stage) return;
     this._resizeObserver?.disconnect();
-    this._resizeObserver = new ResizeObserver((entries) => this._onStageResize(entries[0]?.contentRect));
+    this._resizeObserver = new ResizeObserver((entries) =>
+      this._onStageResize(entries[0]?.contentRect),
+    );
     this._resizeObserver.observe(stage);
     this._intersection?.disconnect();
     this._intersection = new IntersectionObserver((entries) => {
@@ -364,12 +374,12 @@ export class OrreryCard extends LitElement {
     this._requestDraw();
   };
 
-  private _onPointerDown(e: PointerEvent): void {
+  private readonly _onPointerDown = (e: PointerEvent): void => {
     (e.currentTarget as HTMLCanvasElement).setPointerCapture?.(e.pointerId);
     this._gesture.down(e.pointerId, e.clientX, e.clientY, this._cam);
-  }
+  };
 
-  private _onPointerMove(e: PointerEvent): void {
+  private readonly _onPointerMove = (e: PointerEvent): void => {
     const update = this._gesture.move(e.pointerId, e.clientX, e.clientY);
     if (!update) return;
     if ("zoom" in update) {
@@ -379,15 +389,15 @@ export class OrreryCard extends LitElement {
     this._cam.az = update.az;
     this._cam.el = update.el;
     this._requestDraw();
-  }
+  };
 
-  private _onPointerUp(e: PointerEvent): void {
+  private readonly _onPointerUp = (e: PointerEvent): void => {
     // Selection fires on release, and only for a tap that didn't become a
     // drag — so a press can always be cancelled by moving away (WCAG 2.5.2).
     if (!this._gesture.up(e.pointerId, e.type !== "pointerup") || !this._renderer) return;
     const rect = (e.currentTarget as HTMLCanvasElement).getBoundingClientRect();
     this._select(this._renderer.pick(e.clientX - rect.left, e.clientY - rect.top));
-  }
+  };
 
   /** Tapping a planet selects it; tapping it again, or empty sky, clears. */
   private _select(hit: PlanetKey | null): void {
@@ -412,7 +422,7 @@ export class OrreryCard extends LitElement {
     passive: false,
   };
 
-  private _onKeyDown(e: KeyboardEvent): void {
+  private readonly _onKeyDown = (e: KeyboardEvent): void => {
     const command = keyCommand(e.key);
     if (!command) return;
     e.preventDefault();
@@ -425,21 +435,21 @@ export class OrreryCard extends LitElement {
       this._cam.el = clampElevation(this._cam.el + command.el);
       this._requestDraw();
     }
-  }
+  };
 
   private _setZoom(z: number): void {
     this._cam.zoom = clampZoom(z);
     this._requestDraw();
   }
 
-  private _resetView(): void {
+  private readonly _resetView = (): void => {
     const earth = helio(PLANET_BY_KEY.earth.body, this._t);
     this._cam.az = azimuthFacing(Math.atan2(earth[1], earth[0]));
     this._cam.el = DEFAULT_ELEVATION;
     this._cam.zoom = this._openingZoom();
     this._viewPreset = 0;
     this._requestDraw();
-  }
+  };
 
   private _cycleView(): void {
     this._viewPreset = (this._viewPreset + 1) % VIEW_PRESETS.length;
@@ -447,18 +457,18 @@ export class OrreryCard extends LitElement {
     this._requestDraw();
   }
 
-  private _togglePlay(): void {
+  private readonly _togglePlay = (): void => {
     this._playing = !this._playing;
     if (this._playing) this._live = false;
     this._requestDraw();
-  }
+  };
 
-  private _goNow(): void {
+  private readonly _goNow = (): void => {
     this._playing = false;
     this._live = true;
     this._t = OrreryCard._liveTime();
     this._requestDraw();
-  }
+  };
 
   private _step(days: number, months: number): void {
     this._t = stepTime(this._t, days, months);
@@ -466,20 +476,20 @@ export class OrreryCard extends LitElement {
     this._requestDraw();
   }
 
-  private _onDateInput(e: Event): void {
+  private readonly _onDateInput = (e: Event): void => {
     const t = moveToDate(this._t, (e.target as HTMLInputElement).value, this._fmt().ymd(this._t));
     if (t === null) return;
     this._t = t;
     this._live = false;
     this._playing = false;
     this._requestDraw();
-  }
+  };
 
-  private _onSpeed(e: Event): void {
+  private readonly _onSpeed = (e: Event): void => {
     const key = (e.target as HTMLSelectElement).value;
     const match = SPEEDS.find((s) => s.key === key);
     if (match) this._speed = match.key;
-  }
+  };
 
   // ── Template ───────────────────────────────────────────────────────────
 
@@ -531,7 +541,10 @@ export class OrreryCard extends LitElement {
     const MARK = "\u0000";
     const text =
       key === "earth"
-        ? fmt.t("card.readout_earth", { sun: fmt.au(details.sunAu, 4), light: fmt.lightTime(details.sunAu) })
+        ? fmt.t("card.readout_earth", {
+            sun: fmt.au(details.sunAu, 4),
+            light: fmt.lightTime(details.sunAu),
+          })
         : fmt.t("card.readout_planet", {
             name: MARK,
             constellation: details.constellation,
@@ -589,7 +602,8 @@ export class OrreryCard extends LitElement {
           <label class="chip">
             <select aria-label=${fmt.t("controls.speed")} title=${fmt.t("controls.speed")} @change=${this._onSpeed}>
               ${SPEEDS.map(
-                (s) => html`<option value=${s.key} ?selected=${s.key === this._speed}>${fmt.speedLabel(s.key)}</option>`,
+                (s) =>
+                  html`<option value=${s.key} ?selected=${s.key === this._speed}>${fmt.speedLabel(s.key)}</option>`,
               )}
             </select>
             <ha-icon class="chevron" icon="mdi:chevron-down" aria-hidden="true"></ha-icon>

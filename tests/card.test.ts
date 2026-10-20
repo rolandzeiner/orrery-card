@@ -6,11 +6,13 @@
  * so the canvas gets the fake context from fake-canvas.ts and the two
  * observers are replaced by stubs the tests fire by hand.
  */
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 
 import { fakeContext } from "./fake-canvas";
 
-type ObserverCallback = (entries: Array<{ contentRect: { width: number; height: number }; isIntersecting: boolean }>) => void;
+type ObserverCallback = (
+  entries: Array<{ contentRect: { width: number; height: number }; isIntersecting: boolean }>,
+) => void;
 const resizeCallbacks: ObserverCallback[] = [];
 
 class StubResizeObserver {
@@ -48,7 +50,8 @@ interface CardInternals extends HTMLElement {
 beforeAll(async () => {
   vi.stubGlobal("ResizeObserver", StubResizeObserver);
   vi.stubGlobal("IntersectionObserver", StubIntersectionObserver);
-  HTMLCanvasElement.prototype.getContext = (() => fakeContext().ctx) as unknown as HTMLCanvasElement["getContext"];
+  HTMLCanvasElement.prototype.getContext = (() =>
+    fakeContext().ctx) as unknown as HTMLCanvasElement["getContext"];
   await import("../src/orrery-card");
 });
 
@@ -59,13 +62,17 @@ afterEach(() => {
 
 const hassEn = { locale: { language: "en", time_format: "24" }, themes: { darkMode: true } };
 
-async function mount(config: Record<string, unknown> = {}, hass: unknown = hassEn): Promise<CardInternals> {
+async function mount(
+  config: Record<string, unknown> = {},
+  hass: unknown = hassEn,
+): Promise<CardInternals> {
   const card = document.createElement("orrery-card") as unknown as CardInternals;
   card.setConfig({ type: "custom:orrery-card", ambient_motion: false, ...config });
   card.hass = hass;
   document.body.appendChild(card);
   await card.updateComplete;
-  for (const cb of resizeCallbacks) cb([{ contentRect: { width: 400, height: 400 }, isIntersecting: true }]);
+  for (const cb of resizeCallbacks)
+    cb([{ contentRect: { width: 400, height: 400 }, isIntersecting: true }]);
   return card;
 }
 
@@ -198,7 +205,9 @@ describe("view input", () => {
     const canvas = $(card, "canvas");
     const az = card._cam.az;
     const pointer = (type: string, x: number, y: number): void => {
-      canvas.dispatchEvent(new PointerEvent(type, { pointerId: 1, clientX: x, clientY: y, bubbles: true }));
+      canvas.dispatchEvent(
+        new PointerEvent(type, { pointerId: 1, clientX: x, clientY: y, bubbles: true }),
+      );
     };
     pointer("pointerdown", 100, 100);
     pointer("pointermove", 160, 100);

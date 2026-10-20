@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { YAML_DEFAULTS } from "../src/config";
 import { buildSchema } from "../src/editor-schema";
 import { localize } from "../src/localize/localize";
 import type { HaFormSchema } from "../src/types";
+import { sorted } from "../src/sorted";
 
 function fields(schema: ReadonlyArray<HaFormSchema>): HaFormSchema[] {
   return schema.flatMap((f) => ("schema" in f ? fields(f.schema) : [f]));
@@ -16,14 +17,15 @@ describe("editor schema", () => {
 
     it(`offers a field for every option (${lang})`, () => {
       const names = fields(schema).map((f) => f.name);
-      expect(names.sort()).toEqual(["title", ...Object.keys(YAML_DEFAULTS)].sort());
+      expect(sorted(names)).toEqual(sorted(["title", ...Object.keys(YAML_DEFAULTS)]));
     });
 
     it(`labels every field and option (${lang})`, () => {
       for (const f of fields(schema)) {
         expect(t(f.name), f.name).not.toBe(`editor.${f.name}`);
         if ("selector" in f && "select" in f.selector) {
-          for (const o of f.selector.select.options) expect(o.label, `${f.name}=${o.value}`).not.toMatch(/^editor\./);
+          for (const o of f.selector.select.options)
+            expect(o.label, `${f.name}=${o.value}`).not.toMatch(/^editor\./);
         }
       }
     });

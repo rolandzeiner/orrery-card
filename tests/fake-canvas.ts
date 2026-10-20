@@ -14,7 +14,8 @@ export function fakeContext(): FakeContext {
   const state: Record<string | symbol, unknown> = {
     createRadialGradient: () => ({
       addColorStop: (_offset: number, color: string) => {
-        if (!color) throw new SyntaxError("The value provided ('') could not be parsed as a color.");
+        if (!color)
+          throw new SyntaxError("The value provided ('') could not be parsed as a color.");
       },
     }),
     measureText: (text: string) => ({ width: text.length * 6 }),
@@ -41,7 +42,12 @@ export function fakeContext(): FakeContext {
 }
 
 export function fakeCanvas(fake: FakeContext): HTMLCanvasElement {
-  return { getContext: () => fake.ctx, width: 0, height: 0, style: {} } as unknown as HTMLCanvasElement;
+  return {
+    getContext: () => fake.ctx,
+    width: 0,
+    height: 0,
+    style: {},
+  } as unknown as HTMLCanvasElement;
 }
 
 export const SAMPLE_PALETTE = {

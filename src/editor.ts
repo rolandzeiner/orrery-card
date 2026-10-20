@@ -35,14 +35,20 @@ export class OrreryCardEditor extends LitElement {
     return text === `editor.${name}_helper` ? undefined : text;
   };
 
-  private _onChange(ev: CustomEvent<{ value: Record<string, unknown> }>): void {
+  private readonly _onChange = (ev: CustomEvent<{ value: Record<string, unknown> }>): void => {
     ev.stopPropagation();
     const next = tidyConfig({ ...this._config, ...ev.detail.value });
     // Lovelace won't call setConfig again while the dialog is open, so
     // keep our own copy current or the form snaps back on the next render.
     this._config = next;
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: next }, bubbles: true, composed: true }));
-  }
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: { config: next },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
 
   protected override render(): TemplateResult {
     return html`

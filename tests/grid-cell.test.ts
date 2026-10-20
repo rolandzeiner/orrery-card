@@ -16,7 +16,7 @@
  *
  * Needs vitest as a devDependency and a "test": "vitest run" script.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { cardStyles } from "../src/styles";
 
