@@ -114,8 +114,4 @@ export interface HaFormExpandableSchema {
   flatten?: boolean;
   schema: ReadonlyArray<HaFormSchema>;
 }
-export type HaFormSchema =
-  | HaFormSelectorSchema
-  | HaFormGridSchema
-  | HaFormExpandableSchema;
-
+export type HaFormSchema = HaFormSelectorSchema | HaFormGridSchema | HaFormExpandableSchema;

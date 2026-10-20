@@ -65,14 +65,22 @@ export function candidates(item: LabelItem): Rect[] {
  *    too, or a label pushed out of it would land back on a borderline
  *    spot 0 and leave again next frame.
  *  - With nothing free it stays put (or takes 0 on its first frame). */
-export function chooseSpot(count: number, prev: number | undefined, isFree: (i: number, margin: number) => boolean): number {
+export function chooseSpot(
+  count: number,
+  prev: number | undefined,
+  isFree: (i: number, margin: number) => boolean,
+): number {
   if (prev === undefined) return firstFree(count, isFree, 0) ?? 0;
   if (prev !== 0 && isFree(0, RETURN_MARGIN)) return 0;
   if (isFree(prev, 0)) return prev;
   return firstFree(count, isFree, RETURN_MARGIN) ?? prev;
 }
 
-function firstFree(count: number, isFree: (i: number, margin: number) => boolean, marginForZero: number): number | undefined {
+function firstFree(
+  count: number,
+  isFree: (i: number, margin: number) => boolean,
+  marginForZero: number,
+): number | undefined {
   for (let i = 0; i < count; i++) if (isFree(i, i === 0 ? marginForZero : 0)) return i;
   return undefined;
 }
@@ -82,12 +90,19 @@ export class LabelPlacer {
 
   /** `bounds`, when given, is the drawable area: a spot that would stick
    *  out of it counts as taken, so edge labels flip inwards. */
-  place(items: ReadonlyArray<LabelItem>, obstacles: ReadonlyArray<Rect>, bounds?: Rect): Map<string, Rect> {
+  place(
+    items: ReadonlyArray<LabelItem>,
+    obstacles: ReadonlyArray<Rect>,
+    bounds?: Rect,
+  ): Map<string, Rect> {
     const taken: Rect[] = [...obstacles];
     const placed = new Map<string, Rect>();
     const inside = (r: Rect): boolean =>
       !bounds ||
-      (r.x >= bounds.x && r.y >= bounds.y && r.x + r.w <= bounds.x + bounds.w && r.y + r.h <= bounds.y + bounds.h);
+      (r.x >= bounds.x &&
+        r.y >= bounds.y &&
+        r.x + r.w <= bounds.x + bounds.w &&
+        r.y + r.h <= bounds.y + bounds.h);
     const free = (rect: Rect, margin: number): boolean =>
       inside(rect) && !taken.some((other) => overlaps(rect, other, margin));
 

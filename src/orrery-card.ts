@@ -7,7 +7,15 @@ import { helio, planetDetails } from "./astro/ephemeris";
 import { DEFAULTS, resolveConfig } from "./config";
 import { CARD_NAME, CARD_TAG, CARD_VERSION } from "./const";
 import "./editor";
-import { CardFormat, DEFAULT_SPEED, resolveHour12, resolveTimeZone, SPEEDS, speedDays, type SpeedKey } from "./format";
+import {
+  CardFormat,
+  DEFAULT_SPEED,
+  resolveHour12,
+  resolveTimeZone,
+  SPEEDS,
+  speedDays,
+  type SpeedKey,
+} from "./format";
 import { advanceTime, keyCommand, moveToDate, stepTime, ViewGesture } from "./interaction";
 import { resolveLang } from "./localize/localize";
 import {
@@ -207,7 +215,9 @@ export class OrreryCard extends LitElement {
     const stage = this._stage;
     if (!stage) return;
     this._resizeObserver?.disconnect();
-    this._resizeObserver = new ResizeObserver((entries) => this._onStageResize(entries[0]?.contentRect));
+    this._resizeObserver = new ResizeObserver((entries) =>
+      this._onStageResize(entries[0]?.contentRect),
+    );
     this._resizeObserver.observe(stage);
     this._intersection?.disconnect();
     this._intersection = new IntersectionObserver((entries) => {
@@ -531,7 +541,10 @@ export class OrreryCard extends LitElement {
     const MARK = "\u0000";
     const text =
       key === "earth"
-        ? fmt.t("card.readout_earth", { sun: fmt.au(details.sunAu, 4), light: fmt.lightTime(details.sunAu) })
+        ? fmt.t("card.readout_earth", {
+            sun: fmt.au(details.sunAu, 4),
+            light: fmt.lightTime(details.sunAu),
+          })
         : fmt.t("card.readout_planet", {
             name: MARK,
             constellation: details.constellation,
@@ -589,7 +602,8 @@ export class OrreryCard extends LitElement {
           <label class="chip">
             <select aria-label=${fmt.t("controls.speed")} title=${fmt.t("controls.speed")} @change=${this._onSpeed}>
               ${SPEEDS.map(
-                (s) => html`<option value=${s.key} ?selected=${s.key === this._speed}>${fmt.speedLabel(s.key)}</option>`,
+                (s) =>
+                  html`<option value=${s.key} ?selected=${s.key === this._speed}>${fmt.speedLabel(s.key)}</option>`,
               )}
             </select>
             <ha-icon class="chevron" icon="mdi:chevron-down" aria-hidden="true"></ha-icon>

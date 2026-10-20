@@ -41,7 +41,13 @@ export class OrreryCardEditor extends LitElement {
     // Lovelace won't call setConfig again while the dialog is open, so
     // keep our own copy current or the form snaps back on the next render.
     this._config = next;
-    this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: next }, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent("config-changed", {
+        detail: { config: next },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   protected override render(): TemplateResult {

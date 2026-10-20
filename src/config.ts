@@ -1,10 +1,4 @@
-import type {
-  Appearance,
-  ColorTheme,
-  DistanceScale,
-  OpeningView,
-  ResolvedConfig,
-} from "./types";
+import type { Appearance, ColorTheme, DistanceScale, OpeningView, ResolvedConfig } from "./types";
 
 export const TILT_MIN = 1;
 export const TILT_MAX = 8;

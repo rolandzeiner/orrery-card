@@ -2,7 +2,13 @@
 // whose bounds are the loop bounds, so `!` on those reads is safe.
 import { Body } from "astronomy-engine";
 
-import { MERCURY_PERIHELION_AU, PLANETS, shownBodies, type PlanetDef, type PlanetKey } from "../astro/bodies";
+import {
+  MERCURY_PERIHELION_AU,
+  PLANETS,
+  shownBodies,
+  type PlanetDef,
+  type PlanetKey,
+} from "../astro/bodies";
 import {
   OrbitCache,
   ORBIT_SAMPLES,
@@ -126,7 +132,10 @@ function onCanvas(p: readonly number[], size: number, margin: number): boolean {
 }
 
 /** Is this tick label the month or year currently shown? */
-export function isCurrentLabel(label: TickLabel, date: Pick<DateLine, "monthKey" | "year">): boolean {
+export function isCurrentLabel(
+  label: TickLabel,
+  date: Pick<DateLine, "monthKey" | "year">,
+): boolean {
   if (label.kind === "month") return label.year * 12 + label.month === date.monthKey;
   return date.year >= label.year && date.year < label.year + label.span;
 }
@@ -142,9 +151,13 @@ export function uprightAngle(tx: number, ty: number): number {
 /** Label priority: the selected planet, then Earth, then outwards from the
  *  Sun. Deliberately not depth order — that flips as planets pass each
  *  other, and the labels would jump with it. */
-export function labelPriority(selected: PlanetKey | null, planets: ReadonlyArray<PlanetDef> = PLANETS): PlanetKey[] {
+export function labelPriority(
+  selected: PlanetKey | null,
+  planets: ReadonlyArray<PlanetDef> = PLANETS,
+): PlanetKey[] {
   const keys = planets.map((p) => p.key);
-  const rank = (k: PlanetKey): number => (k === selected ? -2 : k === "earth" ? -1 : keys.indexOf(k));
+  const rank = (k: PlanetKey): number =>
+    k === selected ? -2 : k === "earth" ? -1 : keys.indexOf(k);
   return keys.sort((a, b) => rank(a) - rank(b));
 }
 
@@ -264,7 +277,11 @@ export class OrreryRenderer {
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = "source-over";
 
-    if (!this.sky || this.sky.t !== frame.t) this.sky = skySnapshot(frame.t, this.planets.map((p) => p.body));
+    if (!this.sky || this.sky.t !== frame.t)
+      this.sky = skySnapshot(
+        frame.t,
+        this.planets.map((p) => p.body),
+      );
     const sky = this.sky;
     const proj = new Projector(frame.cam, S);
 
@@ -319,7 +336,14 @@ export class OrreryRenderer {
   private fillSky(proj: Projector, inner: string, outer: string): void {
     const ctx = this.ctx;
     if (!this.sky0) {
-      const g = ctx.createRadialGradient(proj.cx, proj.cy * 0.96, 0, proj.cx, proj.cy, this.size * 0.75);
+      const g = ctx.createRadialGradient(
+        proj.cx,
+        proj.cy * 0.96,
+        0,
+        proj.cx,
+        proj.cy,
+        this.size * 0.75,
+      );
       g.addColorStop(0, inner);
       g.addColorStop(1, outer);
       this.sky0 = g;
@@ -380,7 +404,17 @@ export class OrreryRenderer {
     const w = Math.max(bigW, stacked ? Math.max(subW, tagW) : subW + tagW);
     const top = y - bigPx * 0.78;
     const bottom = y3 + subPx * 0.35;
-    return { y, y2, y3, stacked, bigPx, subPx, tag, subW, box: { x: S / 2 - w / 2, y: top, w, h: bottom - top } };
+    return {
+      y,
+      y2,
+      y3,
+      stacked,
+      bigPx,
+      subPx,
+      tag,
+      subW,
+      box: { x: S / 2 - w / 2, y: top, w, h: bottom - top },
+    };
   }
 
   /** A soft oval behind the date: the line-work under it is blurred, then
@@ -405,7 +439,17 @@ export class OrreryRenderer {
       ctx.clip();
       ctx.filter = `blur(${Math.max(2, S * 0.006)}px)`;
       const d = this.dpr;
-      ctx.drawImage(this.canvas, (cx - rx) * d, (cy - ry) * d, rx * 2 * d, ry * 2 * d, cx - rx, cy - ry, rx * 2, ry * 2);
+      ctx.drawImage(
+        this.canvas,
+        (cx - rx) * d,
+        (cy - ry) * d,
+        rx * 2 * d,
+        ry * 2 * d,
+        cx - rx,
+        cy - ry,
+        rx * 2,
+        ry * 2,
+      );
       ctx.restore();
     }
 
@@ -542,7 +586,13 @@ export class OrreryRenderer {
     return { x, y, depth, tx, ty, nx: -ty * outward, ny: tx * outward };
   }
 
-  private drawTickMark(g: TickGeometry, len: number, sel: boolean, zoom: number, pal: Palette): void {
+  private drawTickMark(
+    g: TickGeometry,
+    len: number,
+    sel: boolean,
+    zoom: number,
+    pal: Palette,
+  ): void {
     const ctx = this.ctx;
     ctx.strokeStyle = sel ? pal.accent2 : pal.orbit;
     ctx.globalAlpha = this.depthAlpha(g.depth, 0.28, 0.75, zoom);
@@ -555,7 +605,14 @@ export class OrreryRenderer {
 
   /** A month or year label, set along the orbit and kept upright. The
    *  label for the shown month or year is lit in the accent colour. */
-  private drawTickLabel(label: TickLabel, g: TickGeometry, offset: number, fs: number, frame: Frame, pal: Palette): void {
+  private drawTickLabel(
+    label: TickLabel,
+    g: TickGeometry,
+    offset: number,
+    fs: number,
+    frame: Frame,
+    pal: Palette,
+  ): void {
     const S = this.size;
     const lx = g.x + g.nx * offset;
     const ly = g.y + g.ny * offset;
@@ -578,7 +635,11 @@ export class OrreryRenderer {
       ctx.globalAlpha = this.depthAlpha(g.depth, 0.45, 0.95, frame.cam.zoom);
       ctx.fillStyle = pal.label;
     }
-    ctx.fillText(label.kind === "month" ? this.texts.monthLabel(label.month) : String(label.year), 0, 0);
+    ctx.fillText(
+      label.kind === "month" ? this.texts.monthLabel(label.month) : String(label.year),
+      0,
+      0,
+    );
     ctx.restore();
   }
 
@@ -709,13 +770,18 @@ export class OrreryRenderer {
     ctx.restore();
   }
 
-  private drawPlanets(proj: Projector, sky: SkySnapshot, selected: PlanetKey | null, pal: Palette): void {
+  private drawPlanets(
+    proj: Projector,
+    sky: SkySnapshot,
+    selected: PlanetKey | null,
+    pal: Palette,
+  ): void {
     const S = this.size;
     const sizeScale = Math.max(0.75, Math.min(1.35, S / 520));
     // Far to near, so nearer planets paint over farther ones.
-    const order = this.planets.slice().sort(
-      (a, b) => (this.screen.get(b.key)?.[2] ?? 0) - (this.screen.get(a.key)?.[2] ?? 0),
-    );
+    const order = this.planets
+      .slice()
+      .sort((a, b) => (this.screen.get(b.key)?.[2] ?? 0) - (this.screen.get(a.key)?.[2] ?? 0));
     this.dotRadius.clear();
     for (const p of order) {
       const s = this.screen.get(p.key);
@@ -728,7 +794,14 @@ export class OrreryRenderer {
     if (this.opts.showMoon && earth) this.drawMoon(proj, sky, earth, sizeScale, pal);
   }
 
-  private drawPlanet(proj: Projector, p: PlanetDef, s: Screen, r: number, selected: PlanetKey | null, pal: Palette): void {
+  private drawPlanet(
+    proj: Projector,
+    p: PlanetDef,
+    s: Screen,
+    r: number,
+    selected: PlanetKey | null,
+    pal: Palette,
+  ): void {
     const ctx = this.ctx;
     const [x, y] = s;
     const sel = selected === p.key;
@@ -769,7 +842,14 @@ export class OrreryRenderer {
     ctx.globalAlpha = 1;
   }
 
-  private drawRing(proj: Projector, x: number, y: number, r: number, back: boolean, col: string): void {
+  private drawRing(
+    proj: Projector,
+    x: number,
+    y: number,
+    r: number,
+    back: boolean,
+    col: string,
+  ): void {
     const ctx = this.ctx;
     const o = this.r;
     const R = r * 2.1;
@@ -795,7 +875,13 @@ export class OrreryRenderer {
     ctx.globalAlpha = 1;
   }
 
-  private drawMoon(proj: Projector, sky: SkySnapshot, earth: Screen, sizeScale: number, pal: Palette): void {
+  private drawMoon(
+    proj: Projector,
+    sky: SkySnapshot,
+    earth: Screen,
+    sizeScale: number,
+    pal: Palette,
+  ): void {
     const ctx = this.ctx;
     const R = 15 * sizeScale;
     const o = this.r;
@@ -828,7 +914,12 @@ export class OrreryRenderer {
     ctx.font = this.font(500, fs);
     this.spacing("0.12em");
     const items = this.labelItems(labelPriority(selected, this.planets), fs);
-    const placed = this.labels.place(items, this.labelObstacles(proj), { x: 2, y: 2, w: S - 4, h: S - 4 });
+    const placed = this.labels.place(items, this.labelObstacles(proj), {
+      x: 2,
+      y: 2,
+      w: S - 4,
+      h: S - 4,
+    });
 
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";

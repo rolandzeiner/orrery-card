@@ -10,7 +10,11 @@ export const clampTime = (t: number): number => Math.max(MIN_TIME, Math.min(MAX_
 
 /** Playback: move `t` on by `daysPerSecond` over `dtMs`. `ended` is true
  *  when it ran into the start or end of the travel range. */
-export function advanceTime(t: number, daysPerSecond: number, dtMs: number): { t: number; ended: boolean } {
+export function advanceTime(
+  t: number,
+  daysPerSecond: number,
+  dtMs: number,
+): { t: number; ended: boolean } {
   const next = clampTime(t + daysPerSecond * DAY_MS * (dtMs / 1000));
   return { t: next, ended: next === MIN_TIME || next === MAX_TIME };
 }
@@ -25,7 +29,11 @@ export function stepTime(t: number, days: number, months: number): number {
 /** Move `t` to the date typed into the date input (yyyy-mm-dd), keeping
  *  the time of day. `shown` is the calendar date `t` currently displays,
  *  as [year, month 1-12, day]. Null when the input isn't a full date. */
-export function moveToDate(t: number, input: string, shown: readonly [number, number, number]): number | null {
+export function moveToDate(
+  t: number,
+  input: string,
+  shown: readonly [number, number, number],
+): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input);
   if (!m) return null;
   const target = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
@@ -93,12 +101,16 @@ export class ViewGesture {
   move(id: number, x: number, y: number): GestureUpdate | null {
     if (!this.pointers.has(id)) return null;
     this.pointers.set(id, { x, y });
-    if (this.pinch && this.pointers.size === 2) return { zoom: (this.pinch.z0 * this.spread()) / this.pinch.d0 };
+    if (this.pinch && this.pointers.size === 2)
+      return { zoom: (this.pinch.z0 * this.spread()) / this.pinch.d0 };
     if (!this.drag) return null;
     const dx = x - this.drag.start.x;
     const dy = y - this.drag.start.y;
     if (Math.abs(dx) + Math.abs(dy) > TAP_SLOP) this.drag.moved = true;
-    return { az: this.drag.az0 + dx * ROTATE_PER_PX, el: clampElevation(this.drag.el0 + dy * TILT_PER_PX) };
+    return {
+      az: this.drag.az0 + dx * ROTATE_PER_PX,
+      el: clampElevation(this.drag.el0 + dy * TILT_PER_PX),
+    };
   }
 
   /** Ends a pointer. True when it was a tap: one pointer, barely moved,
