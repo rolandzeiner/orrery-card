@@ -22,18 +22,19 @@ export type Appearance = "space" | "theme";
 export type ColorTheme = "vibe" | "ha" | "kenobi" | "spock";
 
 /** The card's config after defaults, every field present. Built from the
- *  user's YAML (snake_case keys) by `resolveConfig`. */
+ *  user's YAML by `resolveConfig`; `YAML_DEFAULTS` in config.ts lists the
+ *  snake_case YAML keys, and `DEFAULTS` there holds the defaults. */
 export interface ResolvedConfig {
   title: string;
-  /** How planet distances are compressed. Default `log`. */
+  /** How planet distances are compressed. */
   scale: DistanceScale;
-  /** Orbit-tilt multiplier, 1 (true) to 8. Default 1. */
+  /** Orbit-tilt multiplier, 1 (true) to 8. */
   tilt: number;
-  /** Zoom the card opens at. Default `all`. */
+  /** Zoom the card opens at. */
   view: OpeningView;
   /** `space` paints its own dark sky; `theme` follows the HA theme. */
   appearance: Appearance;
-  /** Colour scheme for planets, the Sun and the controls. Default `vibe`. */
+  /** Colour scheme for planets, the Sun and the controls. */
   colorTheme: ColorTheme;
   showControls: boolean;
   showDate: boolean;
@@ -43,7 +44,7 @@ export interface ResolvedConfig {
   showTrails: boolean;
   showBelt: boolean;
   showMoon: boolean;
-  /** Draw Pluto, the dwarf planet. Default false. */
+  /** Draw Pluto, the dwarf planet. */
   showPluto: boolean;
   /** Slowly rotate the Sun. Off under prefers-reduced-motion regardless. */
   ambientMotion: boolean;

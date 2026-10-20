@@ -53,8 +53,8 @@ export default defineConfig(({ mode }) => {
       // Leave Lit html/css templates alone. Formatting them rewrites the
       // whitespace inside rendered elements, which changes the DOM.
       embeddedLanguageFormatting: "off",
-      // Format everything but the bundle (build output), the Markdown and
-      // the workflow YAML, which keep their hand formatting.
+      // Format everything but the bundle (build output), Vitest snapshots,
+      // the Markdown and the workflow YAML, which keep their hand formatting.
       ignorePatterns: ["dist/**", "**/*.md", ".github/**", "**/__snapshots__/**"],
     },
     lint: {
@@ -66,6 +66,8 @@ export default defineConfig(({ mode }) => {
         // category is mostly noise for Lit code (e.g. `_private` names).
         "typescript/no-unnecessary-type-assertion": "error",
         "eslint/no-shadow": "error",
+        // In-place .sort() → use sorted() from src/sorted.ts. Not
+        // toSorted(): it's ES2023 and the build targets es2022.
         "unicorn/no-array-sort": "error",
       },
       // typeCheck: `vp check` also reports TypeScript's own diagnostics,
