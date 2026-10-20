@@ -4,8 +4,8 @@ export const TILT_MIN = 1;
 export const TILT_MAX = 8;
 
 export const SCALES: ReadonlyArray<DistanceScale> = ["log", "sqrt", "true"];
-export const VIEWS: ReadonlyArray<OpeningView> = ["all", "inner"];
-export const APPEARANCES: ReadonlyArray<Appearance> = ["space", "theme"];
+const VIEWS: ReadonlyArray<OpeningView> = ["all", "inner"];
+const APPEARANCES: ReadonlyArray<Appearance> = ["space", "theme"];
 export const COLOR_THEMES: ReadonlyArray<ColorTheme> = ["vibe", "ha", "kenobi", "spock"];
 
 export const DEFAULTS: ResolvedConfig = {

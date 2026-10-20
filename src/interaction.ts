@@ -6,7 +6,7 @@ import { clampElevation, type Camera } from "./render/camera";
 
 // ── Time ─────────────────────────────────────────────────────────────────
 
-export const clampTime = (t: number): number => Math.max(MIN_TIME, Math.min(MAX_TIME, t));
+const clampTime = (t: number): number => Math.max(MIN_TIME, Math.min(MAX_TIME, t));
 
 /** Playback: move `t` on by `daysPerSecond` over `dtMs`. `ended` is true
  *  when it ran into the start or end of the travel range. */

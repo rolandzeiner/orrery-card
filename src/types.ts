@@ -15,52 +15,25 @@ export interface HomeAssistant {
   config?: { time_zone?: string } & Record<string, unknown>;
 }
 
-/** Marker every card config extends. */
-export interface LovelaceCardConfig {
-  type: string;
-  [key: string]: unknown;
-}
-
 export type DistanceScale = "log" | "sqrt" | "true";
 export type OpeningView = "all" | "inner";
 export type Appearance = "space" | "theme";
 /** Colour scheme. `ha` takes the accents from the active HA theme. */
 export type ColorTheme = "vibe" | "ha" | "kenobi" | "spock";
 
-/** The YAML the user writes. Every key is optional. */
-export interface OrreryCardConfig extends LovelaceCardConfig {
-  title?: string;
-  /** How planet distances are compressed. Default `log`. */
-  scale?: DistanceScale;
-  /** Orbit-tilt multiplier, 1 (true) to 8. Default 1. */
-  tilt?: number;
-  /** Zoom the card opens at. Default `all`. */
-  view?: OpeningView;
-  /** `space` paints its own dark sky; `theme` follows the HA theme. */
-  appearance?: Appearance;
-  /** Colour scheme for planets, the Sun and the controls. Default `vibe`. */
-  color_theme?: ColorTheme;
-  show_controls?: boolean;
-  show_date?: boolean;
-  show_readouts?: boolean;
-  show_labels?: boolean;
-  show_ticks?: boolean;
-  show_trails?: boolean;
-  show_belt?: boolean;
-  show_moon?: boolean;
-  /** Draw Pluto, the dwarf planet. Default false. */
-  show_pluto?: boolean;
-  /** Slowly rotate the Sun. Off under prefers-reduced-motion regardless. */
-  ambient_motion?: boolean;
-}
-
-/** `OrreryCardConfig` after defaults — every field present. */
+/** The card's config after defaults, every field present. Built from the
+ *  user's YAML (snake_case keys) by `resolveConfig`. */
 export interface ResolvedConfig {
   title: string;
+  /** How planet distances are compressed. Default `log`. */
   scale: DistanceScale;
+  /** Orbit-tilt multiplier, 1 (true) to 8. Default 1. */
   tilt: number;
+  /** Zoom the card opens at. Default `all`. */
   view: OpeningView;
+  /** `space` paints its own dark sky; `theme` follows the HA theme. */
   appearance: Appearance;
+  /** Colour scheme for planets, the Sun and the controls. Default `vibe`. */
   colorTheme: ColorTheme;
   showControls: boolean;
   showDate: boolean;
@@ -70,7 +43,9 @@ export interface ResolvedConfig {
   showTrails: boolean;
   showBelt: boolean;
   showMoon: boolean;
+  /** Draw Pluto, the dwarf planet. Default false. */
   showPluto: boolean;
+  /** Slowly rotate the Sun. Off under prefers-reduced-motion regardless. */
   ambientMotion: boolean;
 }
 
