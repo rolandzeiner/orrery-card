@@ -19,7 +19,7 @@ npm test         # = vp test run, the unit suite
 npm run check    # = vp check; format, lint and strict type-check
 ```
 
-For live testing in Home Assistant, install the card through HACS once so the Lovelace resource exists, then copy each rebuilt `dist/orrery-card.js` over the installed file and hard-refresh the browser (⌘⇧R / Ctrl⇧R).
+For live testing in Home Assistant, install the card through HACS once so the Lovelace resource exists, then copy each rebuilt `dist/orrery-card.js` over the installed file in `<config>/www/community/orrery-card/`, delete the `orrery-card.js.gz` beside it, and hard-refresh the browser (⌘⇧R / Ctrl⇧R). HACS writes that gzipped copy on install and Home Assistant serves it first, so without the delete the browser keeps getting the old card.
 
 ## Verification gate (must pass before a PR)
 

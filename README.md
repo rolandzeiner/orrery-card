@@ -1,6 +1,6 @@
 # Orrery Card
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 [![Version](https://img.shields.io/github/v/release/rolandzeiner/orrery-card?label=version&color=blue)](https://github.com/rolandzeiner/orrery-card/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![vibe-coded](https://img.shields.io/badge/vibe-coded-ff69b4?logo=musicbrainz&logoColor=white)](https://en.wikipedia.org/wiki/Vibe_coding)
@@ -48,14 +48,13 @@ It runs entirely in your browser. There's no integration to install and nothing 
 
 ### HACS (recommended)
 
+1. Open HACS and search for **Orrery Card**.
+2. Select it and choose **Download**.
+3. Hard-refresh your browser (⌘⇧R or Ctrl⇧R).
+
 [![Add to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=rolandzeiner&repository=orrery-card&category=plugin)
 
-Or add it by hand:
-
-1. In HACS, open the menu (⋮) and choose **Custom repositories**.
-2. Add `https://github.com/rolandzeiner/orrery-card` with the type **Dashboard**.
-3. Find **Orrery Card** in HACS and download it.
-4. Reload your browser.
+Not in the search yet? In HACS, open ⋮ → **Custom repositories**, add `https://github.com/rolandzeiner/orrery-card` with type **Dashboard**, then search again.
 
 ### Manual
 
