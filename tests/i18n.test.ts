@@ -4,6 +4,7 @@ import en from "../src/localize/languages/en.json";
 import de from "../src/localize/languages/de.json";
 import { CARD_VERSION } from "../src/const";
 import pkg from "../package.json";
+import { sorted } from "../src/sorted";
 
 type Dict = { [key: string]: string | Dict };
 
@@ -18,14 +19,14 @@ function flatten(dict: Dict, prefix = ""): Map<string, string> {
 }
 
 const placeholders = (s: string): string[] =>
-  [...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!).sort();
+  sorted([...s.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!));
 
 describe("translations", () => {
-  const enKeys = flatten(en as Dict);
-  const deKeys = flatten(de as Dict);
+  const enKeys = flatten(en);
+  const deKeys = flatten(de);
 
   it("has the same keys in English and German", () => {
-    expect([...deKeys.keys()].sort()).toEqual([...enKeys.keys()].sort());
+    expect(sorted(deKeys.keys())).toEqual(sorted(enKeys.keys()));
   });
 
   it("uses the same placeholders in both languages", () => {

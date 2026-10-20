@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import { DEFAULTS, resolveConfig, tidyConfig, withDefaults, YAML_DEFAULTS } from "../src/config";
+import { sorted } from "../src/sorted";
 
 describe("resolveConfig", () => {
   it("fills every default from an empty config", () => {
@@ -105,7 +106,7 @@ describe("editor round trip", () => {
   });
 
   it("covers every option the card reads", () => {
-    const yamlKeys = Object.keys(YAML_DEFAULTS).sort();
+    const yamlKeys = sorted(Object.keys(YAML_DEFAULTS));
     const resolvedKeys = Object.keys(DEFAULTS).filter((k) => k !== "title");
     expect(yamlKeys).toHaveLength(resolvedKeys.length);
   });

@@ -4,6 +4,7 @@ import { YAML_DEFAULTS } from "../src/config";
 import { buildSchema } from "../src/editor-schema";
 import { localize } from "../src/localize/localize";
 import type { HaFormSchema } from "../src/types";
+import { sorted } from "../src/sorted";
 
 function fields(schema: ReadonlyArray<HaFormSchema>): HaFormSchema[] {
   return schema.flatMap((f) => ("schema" in f ? fields(f.schema) : [f]));
@@ -16,7 +17,7 @@ describe("editor schema", () => {
 
     it(`offers a field for every option (${lang})`, () => {
       const names = fields(schema).map((f) => f.name);
-      expect(names.sort()).toEqual(["title", ...Object.keys(YAML_DEFAULTS)].sort());
+      expect(sorted(names)).toEqual(sorted(["title", ...Object.keys(YAML_DEFAULTS)]));
     });
 
     it(`labels every field and option (${lang})`, () => {

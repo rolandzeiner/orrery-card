@@ -20,6 +20,7 @@ import {
   type Vec3,
 } from "../astro/ephemeris";
 import { DAY_MS } from "../const";
+import { sorted } from "../sorted";
 import type { DistanceScale } from "../types";
 import { Projector, type Camera } from "./camera";
 import { asteroidPosition, makeBelt, makeGeodesic, makeStars, ringPoints } from "./decor";
@@ -158,7 +159,7 @@ export function labelPriority(
   const keys = planets.map((p) => p.key);
   const rank = (k: PlanetKey): number =>
     k === selected ? -2 : k === "earth" ? -1 : keys.indexOf(k);
-  return keys.sort((a, b) => rank(a) - rank(b));
+  return sorted(keys, (a, b) => rank(a) - rank(b));
 }
 
 export class OrreryRenderer {
@@ -779,9 +780,10 @@ export class OrreryRenderer {
     const S = this.size;
     const sizeScale = Math.max(0.75, Math.min(1.35, S / 520));
     // Far to near, so nearer planets paint over farther ones.
-    const order = this.planets
-      .slice()
-      .sort((a, b) => (this.screen.get(b.key)?.[2] ?? 0) - (this.screen.get(a.key)?.[2] ?? 0));
+    const order = sorted(
+      this.planets,
+      (a, b) => (this.screen.get(b.key)?.[2] ?? 0) - (this.screen.get(a.key)?.[2] ?? 0),
+    );
     this.dotRadius.clear();
     for (const p of order) {
       const s = this.screen.get(p.key);

@@ -11,6 +11,7 @@ import {
   sampleOrbit,
   skySnapshot,
 } from "../src/astro/ephemeris";
+import { sorted } from "../src/sorted";
 
 const longitude = (v: [number, number, number]): number => {
   const deg = (Math.atan2(v[1], v[0]) * 180) / Math.PI;
@@ -76,9 +77,10 @@ describe("makeTicks", () => {
   it("labels Earth's orbit with each month once", () => {
     const labels = makeTicks(PLANET_BY_KEY.earth, t).filter((k) => k.label?.kind === "month");
     expect(labels).toHaveLength(12);
-    const months = labels
-      .map((k) => (k.label?.kind === "month" ? k.label.month : -1))
-      .sort((a, b) => a - b);
+    const months = sorted(
+      labels.map((k) => (k.label?.kind === "month" ? k.label.month : -1)),
+      (a, b) => a - b,
+    );
     expect(months).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 

@@ -10,6 +10,7 @@ import {
   ZOOM_MIN,
 } from "../src/render/camera";
 import { scaleDistance, WorldMapper } from "../src/render/scale";
+import { sorted } from "../src/sorted";
 
 describe("WorldMapper", () => {
   it.each(["log", "sqrt", "true"] as const)(
@@ -25,7 +26,7 @@ describe("WorldMapper", () => {
     for (const kind of ["log", "sqrt", "true"] as const) {
       const au = [0.39, 0.72, 1, 1.52, 5.2, 9.5, 19.2, 30.1];
       const r = au.map((a) => scaleDistance(kind, a));
-      expect([...r].sort((x, y) => x - y)).toEqual(r);
+      expect(sorted(r, (x, y) => x - y)).toEqual(r);
     }
   });
 
