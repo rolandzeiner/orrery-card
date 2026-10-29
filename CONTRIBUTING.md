@@ -19,7 +19,7 @@ npm test         # = vp test run, the unit suite
 npm run check    # = vp check; format, lint and strict type-check
 ```
 
-For live testing in Home Assistant, install the card through HACS once so the Lovelace resource exists, then copy each rebuilt `dist/orrery-card.js` over the installed file in `<config>/www/community/orrery-card/`, delete the `orrery-card.js.gz` beside it, and hard-refresh the browser (⌘⇧R / Ctrl⇧R). HACS writes that gzipped copy on install and Home Assistant serves it first, so without the delete the browser keeps getting the old card.
+For live testing in Home Assistant, install the card through the Marketplace once so the Lovelace resource exists, then copy each rebuilt `dist/orrery-card.js` over the installed file in `<config>/www/community/orrery-card/`, delete the `orrery-card.js.gz` beside it, and hard-refresh the browser (⌘⇧R / Ctrl⇧R). The Marketplace (HACS) writes that gzipped copy on install and Home Assistant serves it first, so without the delete the browser keeps getting the old card.
 
 ## Verification gate (must pass before a PR)
 
@@ -31,7 +31,7 @@ git diff --exit-code -- dist/    # committed bundle must match that build
 node -c dist/orrery-card.js      # syntax sanity-check
 ```
 
-Commit `dist/` together with your `src/` change. HACS serves the committed bundle directly, so a `src/` edit without a rebuild ships code that no longer matches the source. CI fails on the same check.
+Commit `dist/` together with your `src/` change. A release attaches the committed bundle, and that is the file users download, so a `src/` edit without a rebuild ships code that no longer matches the source. CI fails on the same check.
 
 CI runs these five plus `npm audit --omit=dev --audit-level=high`, HACS plugin validation and CodeQL.
 
