@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/brand/icon.png" width="40" height="40" alt="" align="absmiddle"> Orrery Card
+# <sub><sub><img src="https://raw.githubusercontent.com/rolandzeiner/orrery-card/main/brand/icon.png" width="40" height="40" alt=""></sub></sub> Orrery Card
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg)](https://github.com/hacs/integration)
 [![Version](https://img.shields.io/github/v/release/rolandzeiner/orrery-card?label=version&color=blue)](https://github.com/rolandzeiner/orrery-card/releases)
