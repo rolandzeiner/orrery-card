@@ -25,8 +25,9 @@ export const cardStyles = css`
   }
 
   ha-card {
-    /* overflow: hidden keeps a card taller than its cell clipped inside its
-       own bounds instead of painting over its neighbour. */
+    /* overflow: hidden keeps a card taller than its cell (with the grid and
+       panel height rules below) clipped inside its own bounds instead of
+       painting over its neighbour. */
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -37,8 +38,8 @@ export const cardStyles = css`
      cell WRAPPER a fixed pixel height whenever rows is numeric -- which a
      user causes just by dragging the row handle -- and styles nothing
      inside it. With display: block above, :host is ha-card's containing
-     block, so the two declarations only work as a pair: without the host's,
-     ha-card's 100% computes to auto and the card paints over the card below.
+     block, so the two rules below only work as a pair: without the host
+     rule, ha-card's 100% computes to auto and the card paints over the card below.
      Gated on the layout HA sets on the card ("grid" in a sections view and
      its edit dialog, "panel" in a panel view), as Mushroom and HA's tile
      card do. The add-card picker sets none and centres each preview in a

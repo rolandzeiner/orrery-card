@@ -6,12 +6,13 @@
  * A sections view gives the card a fixed-height cell whenever rows is numeric
  * -- which the USER causes by dragging the height or width handle, since a
  * stored grid_options overrides getGridOptions(). rows: "auto" exempts
- * nobody. Only the PAIR below makes the card take that height; see
+ * nobody. Only the PAIR of rules in src/styles.ts makes the card take that
+ * height; see
  * ha-lovelace-card references/layout-and-grid.md, "A card whose :host is
  * display: block ...".
  *
  * The pair is gated on the layout attribute HA sets ("grid" in a sections
- * view, "panel" in a panel view). The add-card picker sets none and centres
+ * view and its edit dialog, "panel" in a panel view). The add-card picker sets none and centres
  * each preview in a tile as tall as the tallest one in its row, so an
  * ungated 100% stretches the preview down to it. The selectors only match
  * because the card reflects its layout property, which card.test.ts checks.

@@ -49,7 +49,8 @@ export class OrreryCard extends LitElement {
 
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  // Set by HA: "grid" in a sections view, "panel" in a panel view, unset in
+  // Set by HA: "grid" in a sections view and its edit dialog, "panel" in a
+  // panel view, unset in
   // the add-card picker and masonry. Reflected so the styles can fill the
   // cell only when there is one -- see the grid-cell rules in styles.ts.
   @property({ reflect: true }) public layout?: string;
