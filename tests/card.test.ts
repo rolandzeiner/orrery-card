@@ -107,6 +107,17 @@ describe("the card contract", () => {
     expect(() => card.setConfig({ type: "custom:orrery-card", scale: "cubic" })).toThrow(/"scale"/);
   });
 
+  it("reflects the layout HA sets, so the grid-cell styles can match it", async () => {
+    const ctor = customElements.get("orrery-card") as unknown as {
+      getPropertyOptions(name: string): { reflect?: boolean };
+    };
+    expect(ctor.getPropertyOptions("layout").reflect).toBe(true);
+    const card = await mount();
+    (card as unknown as { layout: string }).layout = "grid";
+    await card.updateComplete;
+    expect((card as unknown as HTMLElement).getAttribute("layout")).toBe("grid");
+  });
+
   it("measures itself and sizes the canvas to the stage", async () => {
     const card = await mount();
     expect(card._renderer?.cssSize).toBe(400);
