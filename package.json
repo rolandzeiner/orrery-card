@@ -1,6 +1,6 @@
 {
   "name": "orrery-card",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Standalone Lovelace custom card — the solar system in 3D, with real planet positions for any date.",
   "type": "module",
