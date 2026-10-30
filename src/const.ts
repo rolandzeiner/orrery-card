@@ -1,7 +1,7 @@
 /** Card version. Must equal `package.json` `version` — `release.yml`
  *  refuses to attach a bundle whose package version differs from the tag,
  *  and `tests/version.test.ts` keeps the two in step between releases. */
-export const CARD_VERSION = "0.1.1";
+export const CARD_VERSION = "0.1.2";
 
 export const CARD_TAG = "orrery-card";
 export const CARD_NAME = "Orrery Card";
