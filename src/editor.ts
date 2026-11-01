@@ -1,13 +1,11 @@
 /**
  * Visual editor.
  *
- * The title and the two colour choices sit bare at the top; the rest is in
- * three collapsed groups that each say what they are set to. What goes
- * where is data, in editor-fields.ts; this file only draws it.
- *
  * Every field goes through ha-form, so it inherits theme, i18n, dark mode
- * and a11y. Several forms share one config, so each reports only the keys
- * the user touched, and the result is saved without the defaults.
+ * and a11y. Several forms share one config: each grouped form reports only
+ * the keys the user changed, and tidyConfig drops anything equal to a
+ * default before saving. What goes where is data, in editor-fields.ts;
+ * this file only draws it.
  */
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";

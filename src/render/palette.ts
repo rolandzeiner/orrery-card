@@ -9,8 +9,9 @@
  *  One element per token, never one element restyled per token: WebKit
  *  (seen on iPadOS 17, issue #10) can keep serving the first computed
  *  colour of an element whose inline colour is rewritten and read back in
- *  a loop during page load, so every token came back as the accent. An
- *  element whose colour never changes has nothing to go stale. */
+ *  a loop during page load, so every token reads as the first one
+ *  resolved. An element whose colour never changes has nothing to go
+ *  stale. */
 export interface Palette {
   /** Sky gradient stops; null in `theme` appearance (the card shows through). */
   skyInner: string | null;
@@ -49,12 +50,9 @@ const TOKENS = {
 
 type TokenKey = keyof typeof TOKENS;
 
-/** The probe children the card renders: one per token, in a fixed order.
- *  Each carries an inline `transition: none !important`. Under
- *  prefers-reduced-motion the card's catch-all gives every element a
- *  0.01ms `transition: all`, and a read taken mid-transition after a theme
- *  change returns the colour it is leaving. Inline !important beats any
- *  stylesheet rule, including a theme's or card-mod's. */
+/** Token keys and their custom properties, in TOKENS order. The card
+ *  renders one probe child per entry, marked `data-token=<key>`, and
+ *  readPalette looks each one up by that attribute. */
 export const PROBE_TOKENS = Object.entries(TOKENS) as ReadonlyArray<[TokenKey, string]>;
 
 const TRANSPARENT = /^(transparent|rgba\([^)]*,\s*0\))$/;
@@ -69,10 +67,11 @@ const TRANSPARENT = /^(transparent|rgba\([^)]*,\s*0\))$/;
  *  addColorStop (so the frame stops halfway).
  *
  *  A read where every required token resolved to the same colour is a
- *  failed read too: no theme draws orbits, labels, planets and the date
- *  plate in one colour, but a browser that hasn't resolved the tokens yet
- *  returns the inherited colour for all of them, and a stored palette is
- *  never re-read, so the whole canvas would stay one flat colour. */
+ *  failed read too. No theme draws orbits, labels, planets and the date
+ *  plate in one colour, but a probe whose tokens haven't resolved returns
+ *  one colour for all of them (the inherited one, or WebKit's stale first
+ *  value, see above). Accepted, it would keep the canvas one flat colour
+ *  until the theme or config changed. */
 export function readPalette(probe: HTMLElement): Palette | null {
   if (!probe.isConnected) return null;
   const resolve = (key: TokenKey): string => {

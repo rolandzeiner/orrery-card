@@ -42,7 +42,7 @@ console.info(
 const AMBIENT_FRAME_MS = 50;
 /** How often live mode checks the clock. The date line shows minutes. */
 const LIVE_TICK_MS = 15_000;
-/** Retry cadence and cap for a palette read that failed on a laid-out card. */
+/** Retry cadence and cap (about 5 s) for a palette read that failed on a connected card. */
 const PALETTE_RETRY_MS = 250;
 const PALETTE_RETRY_LIMIT = 20;
 
@@ -229,9 +229,9 @@ export class OrreryCard extends LitElement {
     this._requestDraw();
   }
 
-  /** A failed read on a card that is already connected and laid out gets
-   *  no resize or reconnect to retry it, so retry on a short timer for a
-   *  few seconds. Past that, the next update, resize or reconnect retries. */
+  /** A failed read may get no later update, resize or reconnect to retry
+   *  it, so retry on a short timer for a few seconds. Past that, the next
+   *  update or resize tries once more, and a reconnect restarts the count. */
   private _schedulePaletteRetry(): void {
     if (this._paletteRetry !== undefined || !this.isConnected) return;
     if (this._paletteRetries >= PALETTE_RETRY_LIMIT) return;
@@ -539,6 +539,11 @@ export class OrreryCard extends LitElement {
       >
         <span class="probe" aria-hidden="true"
           >${PROBE_TOKENS.map(
+            // No transitions on the probe children: under reduced motion the
+            // card gives every element a 0.01ms transition-duration (on all
+            // properties, the default), and a read taken mid-transition after
+            // a theme change returns the old colour. Inline !important beats
+            // any stylesheet rule, including a theme's or card-mod's.
             ([key, token]) =>
               html`<span
                 data-token=${key}

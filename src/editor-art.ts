@@ -3,10 +3,12 @@
  * orrery in the theme's own colours, on the background the card will
  * draw it on. Plain data (SVG as data: URIs), so a node test can read it.
  *
- * The colours are copied from styles.ts, where the card defines them. A
- * tile is a preview, not the card itself, so it takes each theme's
- * fallback values: the HA theme tile shows Home Assistant's default
- * primary and accent colours, not the user's.
+ * The space colours and the Vibe, Kenobi and Spock accents are copied
+ * from styles.ts, where the card defines them. Where styles.ts reads a
+ * colour from the HA theme (the HA colour theme's accents, and the card
+ * background and secondary text in the theme appearance), a tile can't
+ * know the user's theme, so it shows Home Assistant's default light and
+ * dark values instead.
  */
 import type { Appearance, ColorTheme } from "./types";
 

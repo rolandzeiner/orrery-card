@@ -5,7 +5,7 @@
  * in editor-fields.test.ts fails when an option has no field here, which
  * is how a new option would end up YAML-only.
  *
- * Three tiers, the house layout for an editor past about ten options: the
+ * Three tiers, for an editor with more than about ten options: the
  * title and the two colour choices bare at the top, then one collapsed
  * group per concern, each saying in its header what it is set to. Groups
  * and the fields inside them run from the option people change most to
@@ -24,8 +24,7 @@ import {
 import { tileImage } from "./editor-art";
 import type { HaFormSchema, HASelector, ResolvedConfig } from "./types";
 
-/** Every option the editor offers, keyed as the user writes it in YAML.
- *  editor-fields.test.ts checks this list against YAML_DEFAULTS. */
+/** Every option the editor offers, keyed as the user writes it in YAML. */
 export type FieldName =
   | "title"
   | "scale"

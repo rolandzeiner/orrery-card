@@ -127,7 +127,7 @@ describe("group summaries", () => {
 describe("editor source", () => {
   it("never binds the panels' expanded state", () => {
     // Bound, the panel's body keeps a pixel height and spills over the
-    // panels below (ha-lovelace-card, editor-composition.md).
+    // panels below; see _renderGroup in src/editor.ts.
     expect(editorSource).not.toMatch(/\.expanded=|\?expanded=/);
   });
 });

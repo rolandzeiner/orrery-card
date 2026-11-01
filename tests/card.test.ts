@@ -158,9 +158,10 @@ describe("time controls", () => {
 
   it("steps by a day and a month, and Now returns to the live sky", async () => {
     const card = await mount();
-    // Mid-month, so the month steps don't overflow: from today the
-    // round trip breaks whenever yesterday was the 31st (31 Oct + 1 month
-    // is 1 Dec, by design, see interaction.test.ts).
+    // Pinned mid-month: a month step from a day the next month lacks
+    // overflows (31 Oct + 1 month is 1 Dec, by design, see
+    // interaction.test.ts), so starting near a month's end breaks the
+    // round trip.
     card._t = Date.UTC(2026, 5, 15, 12);
     const t0 = card._t;
     button(card, "Back one day").click();
