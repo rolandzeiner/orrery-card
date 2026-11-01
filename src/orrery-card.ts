@@ -27,7 +27,7 @@ import {
   VIEW_PRESETS,
   type Camera,
 } from "./render/camera";
-import { readPalette } from "./render/palette";
+import { PROBE_TOKENS, readPalette } from "./render/palette";
 import { OrreryRenderer, type RenderOptions } from "./render/renderer";
 import { cardStyles } from "./styles";
 import type { HomeAssistant, ResolvedConfig } from "./types";
@@ -42,6 +42,9 @@ console.info(
 const AMBIENT_FRAME_MS = 50;
 /** How often live mode checks the clock. The date line shows minutes. */
 const LIVE_TICK_MS = 15_000;
+/** Retry cadence and cap for a palette read that failed on a laid-out card. */
+const PALETTE_RETRY_MS = 250;
+const PALETTE_RETRY_LIMIT = 20;
 
 @customElement(CARD_TAG)
 export class OrreryCard extends LitElement {
@@ -76,6 +79,8 @@ export class OrreryCard extends LitElement {
   private _formatKey = "";
   private _hassKey = "";
   private _paletteKey = "";
+  private _paletteRetry: ReturnType<typeof setTimeout> | undefined;
+  private _paletteRetries = 0;
   private _uiKey = "";
 
   private _resizeObserver?: ResizeObserver;
@@ -146,6 +151,7 @@ export class OrreryCard extends LitElement {
     }, LIVE_TICK_MS);
     document.addEventListener("visibilitychange", this._onVisibility);
     this._reducedMotion.addEventListener("change", this._onMotionPref);
+    this._paletteRetries = 0;
     if (this._renderer) {
       this._observe();
       // The theme may have changed while the card was detached, and a card
@@ -158,6 +164,8 @@ export class OrreryCard extends LitElement {
     super.disconnectedCallback();
     clearInterval(this._liveTimer);
     clearTimeout(this._toastTimer);
+    clearTimeout(this._paletteRetry);
+    this._paletteRetry = undefined;
     cancelAnimationFrame(this._raf);
     this._raf = 0;
     this._lastFrame = 0;
@@ -210,11 +218,28 @@ export class OrreryCard extends LitElement {
     const palette = readPalette(probe);
     if (!palette) {
       this._paletteKey = "";
+      this._schedulePaletteRetry();
       return;
     }
+    clearTimeout(this._paletteRetry);
+    this._paletteRetry = undefined;
+    this._paletteRetries = 0;
     this._paletteKey = key;
     renderer.setPalette(palette);
     this._requestDraw();
+  }
+
+  /** A failed read on a card that is already connected and laid out gets
+   *  no resize or reconnect to retry it, so retry on a short timer for a
+   *  few seconds. Past that, the next update, resize or reconnect retries. */
+  private _schedulePaletteRetry(): void {
+    if (this._paletteRetry !== undefined || !this.isConnected) return;
+    if (this._paletteRetries >= PALETTE_RETRY_LIMIT) return;
+    this._paletteRetries++;
+    this._paletteRetry = setTimeout(() => {
+      this._paletteRetry = undefined;
+      this._refreshPalette(true);
+    }, PALETTE_RETRY_MS);
   }
 
   private _observe(): void {
@@ -512,7 +537,15 @@ export class OrreryCard extends LitElement {
           [`ct-${c.colorTheme}`]: true,
         })}
       >
-        <span class="probe" aria-hidden="true"></span>
+        <span class="probe" aria-hidden="true"
+          >${PROBE_TOKENS.map(
+            ([key, token]) =>
+              html`<span
+                data-token=${key}
+                style="color: var(${token}); transition: none !important"
+              ></span>`,
+          )}</span
+        >
         ${c.title ? html`<h2 class="title">${c.title}</h2>` : nothing}
         <div class="stage">
           <canvas
