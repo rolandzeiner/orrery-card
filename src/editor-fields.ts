@@ -67,7 +67,7 @@ function select(name: FieldName, values: ReadonlyArray<string>, t: Translate): E
 
 /** The config as the editor reads it. A config the card would reject
  *  still gets an editor, drawn with the defaults. */
-export function resolved(config: Record<string, unknown>): ResolvedConfig {
+function resolved(config: Record<string, unknown>): ResolvedConfig {
   try {
     return resolveConfig(config);
   } catch {
@@ -198,10 +198,28 @@ const CONTROLS = [
   ["show_readouts", "showReadouts"],
 ] as const satisfies ReadonlyArray<readonly [FieldName, keyof ResolvedConfig]>;
 
+/** The sky names what is hidden rather than what is shown, since by
+ *  default almost everything is. */
+function skySummary(c: ResolvedConfig, t: Translate): string {
+  const hidden = SKY_LAYERS.filter(([, key]) => !c[key]).map(([name]) =>
+    t(`editor.summary.${name}`),
+  );
+  const [a = "", b = ""] = hidden;
+  let layers: string;
+  if (hidden.length === 0) layers = t("editor.summary.all_shown");
+  else if (hidden.length === 1) layers = t("editor.summary.without_one", { a });
+  else if (hidden.length === 2) layers = t("editor.summary.without_two", { a, b });
+  else
+    layers = t("editor.summary.shown_count", {
+      n: SKY_LAYERS.length - hidden.length,
+      total: SKY_LAYERS.length,
+    });
+  return c.ambientMotion ? layers : `${layers} · ${t("editor.summary.sun_still")}`;
+}
+
 /**
  * The line under a collapsed group: what it is set to, so nobody has to
- * open a panel to find out. The sky names what is hidden rather than what
- * is shown, since by default almost everything is.
+ * open a panel to find out.
  */
 export function groupSummary(
   id: GroupId,
@@ -211,24 +229,8 @@ export function groupSummary(
 ): string {
   const c = resolved(config);
   switch (id) {
-    case "sky": {
-      const hidden = SKY_LAYERS.filter(([, key]) => !c[key]).map(([name]) =>
-        t(`editor.summary.${name}`),
-      );
-      const [a = "", b = ""] = hidden;
-      const layers =
-        hidden.length === 0
-          ? t("editor.summary.all_shown")
-          : hidden.length === 1
-            ? t("editor.summary.without_one", { a })
-            : hidden.length === 2
-              ? t("editor.summary.without_two", { a, b })
-              : t("editor.summary.shown_count", {
-                  n: SKY_LAYERS.length - hidden.length,
-                  total: SKY_LAYERS.length,
-                });
-      return c.ambientMotion ? layers : `${layers} · ${t("editor.summary.sun_still")}`;
-    }
+    case "sky":
+      return skySummary(c, t);
     case "view": {
       const tilt =
         c.tilt === DEFAULTS.tilt
