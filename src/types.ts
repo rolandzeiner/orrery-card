@@ -66,8 +66,15 @@ export type HASelector =
     }
   | {
       select: {
-        mode?: "dropdown" | "list";
-        options: ReadonlyArray<{ value: string; label: string }>;
+        mode?: "dropdown" | "list" | "box";
+        /** Box mode only; Home Assistant's default is 3. */
+        box_max_columns?: number;
+        options: ReadonlyArray<{
+          value: string;
+          label: string;
+          /** Box mode only: a picture on the tile, with an optional dark one. */
+          image?: string | { src: string; src_dark?: string };
+        }>;
       };
     };
 
@@ -85,6 +92,7 @@ export interface HaFormExpandableSchema {
   type: "expandable";
   name: string;
   title?: string;
+  icon?: string;
   /** REQUIRED for flat config shapes. Without it, ha-form nests the inner
    *  values under `data[name]` and the card silently misses them. */
   flatten?: boolean;
