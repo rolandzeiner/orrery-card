@@ -63,8 +63,9 @@ That prints a summary and writes `coverage/coverage-final.json` (gitignored). Th
 | `src/format.ts` | Everything localised: dates, numbers, readout text |
 | `src/interaction.ts` | Keyboard map, pointer gestures, playback and date stepping — no DOM, so it's unit-tested directly |
 | `src/config.ts` | YAML validation, defaults, and the editor's fill-in / tidy-up of defaults |
-| `src/editor.ts`, `src/editor-schema.ts` | Visual editor: `ha-form` with the defaults filled in, saving only what changed |
-| `tests/` | Vitest suites, run by `vp test`. Most run in plain node; `card.test.ts` opts into happy-dom and drives the real element, with the canvas replaced by `tests/fake-canvas.ts`. `toolchain.test.ts` guards the `vite` override (see *Card build*) |
+| `src/editor.ts` | Visual editor: the title and colour tiles on top, then collapsed groups with a summary line; defaults shown, only changes saved |
+| `src/editor-fields.ts`, `src/editor-art.ts` | What the editor shows, as plain data: the fields per group, the summary lines, and the SVG pictures on the colour-theme and background tiles |
+| `tests/` | Vitest suites, run by `vp test`. Most run in plain node; `card.test.ts`, `editor.test.ts` and `palette.test.ts` opt into happy-dom and drive the real elements, with the canvas replaced by `tests/fake-canvas.ts`. `toolchain.test.ts` guards the `vite` override (see *Card build*) |
 
 The card only redraws when something changes. Keep it that way: a new animation must stop when the card is off screen, when the tab is hidden, and under `prefers-reduced-motion`.
 

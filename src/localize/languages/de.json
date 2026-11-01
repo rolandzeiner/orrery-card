@@ -82,7 +82,6 @@
     "appearance": "Hintergrund",
     "appearance_space": "Weltraum (immer dunkel)",
     "appearance_theme": "Wie das Theme",
-    "layers": "Auf der Karte anzeigen",
     "show_controls": "Zeitsteuerung",
     "show_date": "Datum",
     "show_readouts": "Messwerte in den Ecken",
@@ -94,6 +93,33 @@
     "show_pluto": "Pluto",
     "show_pluto_helper": "Ein Zwergplanet. Seine Bahn reicht über die des Neptun hinaus. Läuft sie über den Kartenrand, zoom heraus.",
     "ambient_motion": "Rotierende Sonne",
-    "ambient_motion_helper": "Hält die Karte in Bewegung. Schalte das aus, um auf Wandtablets Strom zu sparen."
+    "ambient_motion_helper": "Hält die Karte in Bewegung. Schalte das aus, um auf Wandtablets Strom zu sparen.",
+    "groups": {
+      "sky": "Himmel",
+      "view": "Ansicht",
+      "controls": "Bedienung und Anzeigen"
+    },
+    "summary": {
+      "all_shown": "Alles eingeblendet",
+      "without_one": "Ohne {a}",
+      "without_two": "Ohne {a} und {b}",
+      "shown_count": "{n} von {total} Ebenen eingeblendet",
+      "sun_still": "Sonne steht still",
+      "show_pluto": "Pluto",
+      "show_labels": "Namen",
+      "show_trails": "Spuren",
+      "show_moon": "Mond",
+      "show_belt": "Asteroidengürtel",
+      "show_ticks": "Zeitmarken",
+      "scale_log": "Log-Skala",
+      "scale_sqrt": "Wurzel-Skala",
+      "scale_true": "Maßstabsgetreu",
+      "tilt_real": "Echte Neigung",
+      "tilt": "Neigung ×{n}",
+      "show_controls": "Zeitsteuerung",
+      "show_date": "Datum",
+      "show_readouts": "Messwerte",
+      "all_hidden": "Alles ausgeblendet"
+    }
   }
 }

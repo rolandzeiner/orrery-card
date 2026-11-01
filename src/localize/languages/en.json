@@ -82,7 +82,6 @@
     "appearance": "Background",
     "appearance_space": "Space (always dark)",
     "appearance_theme": "Follow the theme",
-    "layers": "Show on the card",
     "show_controls": "Time controls",
     "show_date": "Date",
     "show_readouts": "Readouts in the corners",
@@ -94,6 +93,33 @@
     "show_pluto": "Pluto",
     "show_pluto_helper": "A dwarf planet. Its orbit reaches past Neptune's. If it runs off the card, zoom out.",
     "ambient_motion": "Rotating Sun",
-    "ambient_motion_helper": "Keeps the card moving. Turn it off to save power on wall tablets."
+    "ambient_motion_helper": "Keeps the card moving. Turn it off to save power on wall tablets.",
+    "groups": {
+      "sky": "Sky",
+      "view": "View",
+      "controls": "Controls and readouts"
+    },
+    "summary": {
+      "all_shown": "Everything shown",
+      "without_one": "Without {a}",
+      "without_two": "Without {a} and {b}",
+      "shown_count": "{n} of {total} layers shown",
+      "sun_still": "Sun at rest",
+      "show_pluto": "Pluto",
+      "show_labels": "names",
+      "show_trails": "trails",
+      "show_moon": "the Moon",
+      "show_belt": "the asteroid belt",
+      "show_ticks": "time marks",
+      "scale_log": "Log scale",
+      "scale_sqrt": "Square-root scale",
+      "scale_true": "True to scale",
+      "tilt_real": "Real tilt",
+      "tilt": "Tilt ×{n}",
+      "show_controls": "Time controls",
+      "show_date": "Date",
+      "show_readouts": "Readouts",
+      "all_hidden": "All hidden"
+    }
   }
 }

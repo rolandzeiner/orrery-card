@@ -43,7 +43,11 @@ interface CardInternals extends HTMLElement {
   _selected: string | null;
   _speed: string;
   _cam: { az: number; el: number; zoom: number };
-  _renderer?: { pick: (x: number, y: number) => string | null; cssSize: number };
+  _renderer?: {
+    pick: (x: number, y: number) => string | null;
+    cssSize: number;
+    hasPalette: boolean;
+  };
   _frame: (ts: number) => void;
 }
 
@@ -154,6 +158,11 @@ describe("time controls", () => {
 
   it("steps by a day and a month, and Now returns to the live sky", async () => {
     const card = await mount();
+    // Pinned mid-month: a month step from a day the next month lacks
+    // overflows (31 Oct + 1 month is 1 Dec, by design, see
+    // interaction.test.ts), so starting near a month's end breaks the
+    // round trip.
+    card._t = Date.UTC(2026, 5, 15, 12);
     const t0 = card._t;
     button(card, "Back one day").click();
     expect(card._t).toBe(t0 - 86_400_000);
@@ -298,6 +307,26 @@ describe("language and appearance", () => {
     await card.updateComplete;
     expect(haCard.classList.contains("ct-kenobi")).toBe(true);
     expect(haCard.classList.contains("ct-spock")).toBe(false);
+  });
+
+  it("retries a palette read that came back as one colour (#10)", async () => {
+    const real = window.getComputedStyle.bind(window);
+    let collapsed = true;
+    const colours = ["rgb(1, 2, 3)", "rgb(4, 5, 6)"];
+    let next = 0;
+    vi.stubGlobal("getComputedStyle", (el: Element) => {
+      if (!(el instanceof HTMLElement) || !el.dataset.token) return real(el);
+      return { color: collapsed ? "rgb(0, 154, 199)" : colours[next++ % 2], fontFamily: "" };
+    });
+    try {
+      const card = await mount();
+      expect(card._renderer?.hasPalette).toBe(false);
+      collapsed = false;
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      expect(card._renderer?.hasPalette).toBe(true);
+    } finally {
+      vi.stubGlobal("getComputedStyle", real);
+    }
   });
 
   it("survives being moved in the page", async () => {
