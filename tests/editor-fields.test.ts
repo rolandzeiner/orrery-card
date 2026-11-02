@@ -35,9 +35,8 @@ describe("editor fields", () => {
     it(`labels every field, option and group (${lang})`, () => {
       for (const f of allFields(t)) {
         expect(t(`editor.${f.name}`), f.name).not.toMatch(/^editor\./);
-        if ("select" in f.selector)
-          for (const o of f.selector.select.options)
-            expect(o.label, `${f.name}=${o.value}`).not.toMatch(/^editor\./);
+        const options = "select" in f.selector ? f.selector.select.options : [];
+        for (const o of options) expect(o.label, `${f.name}=${o.value}`).not.toMatch(/^editor\./);
       }
       for (const g of GROUPS) expect(t(`editor.groups.${g.id}`)).not.toMatch(/^editor\./);
     });
