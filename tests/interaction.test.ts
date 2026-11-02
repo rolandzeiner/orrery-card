@@ -64,10 +64,9 @@ describe("ViewGesture", () => {
     g.down(1, 100, 100, cam);
     const update = g.move(1, 150, 120);
     expect(update).toMatchObject({ az: expect.any(Number), el: expect.any(Number) });
-    if (update && "az" in update) {
-      expect(update.az).toBeGreaterThan(cam.az);
-      expect(update.el).toBeGreaterThan(cam.el);
-    }
+    const { az, el } = update as { az: number; el: number };
+    expect(az).toBeGreaterThan(cam.az);
+    expect(el).toBeGreaterThan(cam.el);
     expect(g.up(1, false)).toBe(false);
   });
 
