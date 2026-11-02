@@ -59,6 +59,9 @@ export default defineConfig(({ mode }) => {
     },
     lint: {
       ignorePatterns: ["dist/**"],
+      // Oxlint's default plugins plus vitest; listing plugins replaces the
+      // defaults, so all four are named.
+      plugins: ["typescript", "unicorn", "oxc", "vitest"],
       jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
       rules: {
         "vite-plus/prefer-vite-plus-imports": "error",
@@ -69,12 +72,33 @@ export default defineConfig(({ mode }) => {
         // In-place .sort() → use sorted() from src/sorted.ts. Not
         // toSorted(): it's ES2023 and the build targets es2022.
         "unicorn/no-array-sort": "error",
+        // Test hygiene: a skipped, focused or assertion-free test is a
+        // test that silently proves nothing.
+        "vitest/no-focused-tests": "error",
+        "vitest/no-disabled-tests": "error",
+        "vitest/no-identical-title": "error",
+        "vitest/expect-expect": "error",
+        "vitest/no-standalone-expect": "error",
+        "vitest/no-conditional-expect": "error",
+        "vitest/no-commented-out-tests": "error",
+        "vitest/valid-title": "error",
+        // expect(value, message) is Vitest API; the default of one
+        // argument is Jest's.
+        "vitest/valid-expect": ["error", { maxArgs: 2 }],
+        // Untyped vi.fn() is everywhere and hides no bug.
+        "vitest/require-mock-type-parameters": "off",
       },
       // typeCheck: `vp check` also reports TypeScript's own diagnostics,
       // which makes it the pipeline's only type-check.
       // denyWarnings: a warning fails `vp check` (and CI) instead of
       // scrolling past with exit 0.
-      options: { typeAware: true, typeCheck: true, denyWarnings: true },
+      // reportUnusedDisableDirectives: a stale oxlint-disable comment fails.
+      options: {
+        typeAware: true,
+        typeCheck: true,
+        denyWarnings: true,
+        reportUnusedDisableDirectives: "error",
+      },
     },
   };
 });
