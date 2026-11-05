@@ -35,16 +35,14 @@ export default defineConfig(({ mode }) => {
       rolldownOptions: {
         output: {
           banner,
-          // HACS installs one file, so never split chunks: the editor's
-          // dynamic import (getConfigElement) gets inlined into the bundle.
+          // HACS installs one file, so the bundle never splits into chunks.
           codeSplitting: false,
           comments: { legal: true },
           // Set on the Rolldown output, not `build.minify`: Vite's library
           // mode skips whitespace minification for ES output. Keep console.*
-          // (dropConsole: false): the card's console calls are its only
-          // client-side failure signal, and the console.info version banner
-          // shows which bundle the browser loaded. Rolldown's dropConsole is
-          // all-or-nothing.
+          // (dropConsole: false) so the console.info version banner, which
+          // shows which bundle the browser loaded, survives. Rolldown's
+          // dropConsole is all-or-nothing.
           minify: dev ? false : { compress: { dropConsole: false }, mangle: true, codegen: true },
         },
       },
@@ -54,7 +52,7 @@ export default defineConfig(({ mode }) => {
       // whitespace inside rendered elements, which changes the DOM.
       embeddedLanguageFormatting: "off",
       // Format everything but the bundle (build output), Vitest snapshots,
-      // the Markdown and the workflow YAML, which keep their hand formatting.
+      // the Markdown and the .github YAML, which keep their hand formatting.
       ignorePatterns: ["dist/**", "**/*.md", ".github/**", "**/__snapshots__/**"],
     },
     lint: {
@@ -85,7 +83,8 @@ export default defineConfig(({ mode }) => {
         // expect(value, message) is Vitest API; the default of one
         // argument is Jest's.
         "vitest/valid-expect": ["error", { maxArgs: 2 }],
-        // Untyped vi.fn() is everywhere and hides no bug.
+        // An untyped vi.fn() hides no bug, so requiring a type parameter
+        // is noise.
         "vitest/require-mock-type-parameters": "off",
       },
       // typeCheck: `vp check` also reports TypeScript's own diagnostics,

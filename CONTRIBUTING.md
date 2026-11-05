@@ -40,19 +40,19 @@ Commit the built bundle. End users install through the Marketplace and never run
 Things in `vite.config.ts` that fail silently if you change them:
 
 - The banner must be a **legal** comment, `/*! ... */`, with `comments: { legal: true }`. The minifier strips a `//` banner without a word; only the built file's first bytes show it.
-- **`minify` lives on `rolldownOptions.output`, with `dropConsole: false`.** Vite's library mode skips whitespace minification for ES output, so `build.minify` alone ships the bundle with its whitespace left in. `dropConsole` is all-or-nothing, and the `console.*` calls here are the card's only client-side failure signal; the version banner in the console is how you check which bundle the browser loaded.
+- **`minify` lives on `rolldownOptions.output`, with `dropConsole: false`.** Vite's library mode skips whitespace minification for ES output, so `build.minify` alone ships the bundle with its whitespace left in. `dropConsole` is all-or-nothing, and the card's one console call, the `console.info` version banner, is how you check which bundle the browser loaded.
 - **Dev vs prod comes from `--mode development`** (`npm run dev`). A plain `vp build` is production: minified, no sourcemap.
 - **`fmt.embeddedLanguageFormatting` stays `"off"`.** Otherwise Oxfmt reformats Lit `html` and `css` templates and changes the whitespace inside rendered elements, which is a DOM change, not a style change.
 - **Decorators are not configured.** Rolldown reads `tsconfig.json` itself and enables Lit's legacy decorators from it. If that ever regresses, class fields overwrite Lit's accessors and reactivity dies while the build stays green; the suites that mount the real card catch it.
 - **`lint.plugins` replaces Oxlint's defaults.** It names `typescript`, `unicorn` and `oxc` next to `vitest`; drop one and its rules stop running without a word. The `vitest/*` rules fail a committed `.only` or `.skip`, a test without an assertion, a duplicate title, an `expect` inside an `if` and a bare `toThrow()`, and `reportUnusedDisableDirectives` fails a disable comment that no longer suppresses anything.
 - **`lint.options.denyWarnings: true`.** Without it `vp check` exits 0 on warnings, and CI lets them through.
-- **`codeSplitting: false`.** The card is one file; a dashboard resource can't load a second chunk the bundler decided on. The editor's dynamic import is inlined into the bundle.
+- **`codeSplitting: false`.** The card is one file; a dashboard resource can't load a second chunk the bundler decided on.
 
 **The `vite` override in `package.json` must name the same version as `vite-plus`.** It keeps npm from installing upstream Vite next to Vite+'s core. Dependabot bumps `vite-plus` but not the override, and `tests/toolchain.test.ts` fails until both match. Bump with `npx --package=vite-plus@<new> vp migrate --no-interactive`, which moves both; `npm install vite-plus@<new>` fails with ERESOLVE.
 
 The build does not type-check. `vp check` is the only thing between a type error and a green build, which is why the gate runs it as its own step. It also catches a backtick inside a Lit `css` or `html` template, comments included, which ends the template early and fails the card at load while the build stays green.
 
-`tsconfig.json`'s `lib` is the card's browser floor: `es2022`. That rules out ES2023 built-ins such as `toSorted()`, which the bundle doesn't polyfill; use `sorted()` from `src/sorted.ts`. Raising the floor raises the browser requirement for the card; change both together.
+`tsconfig.json`'s `lib` is the card's browser floor: `es2022`. That rules out ES2023 built-ins such as `toSorted()`, which the bundle doesn't polyfill; use `sorted()` from `src/sorted.ts`. `build.target` in `vite.config.ts` names the same level. Raising the floor raises the browser requirement for the card; change both together.
 
 ### Trying it in Home Assistant
 
@@ -84,6 +84,7 @@ The suites are in `tests/` and import from `vite-plus/test`. Most run in plain N
 | `config.test.ts`, `editor-fields.test.ts`, `editor.test.ts` | config validation and defaults, the editor's fields and summaries |
 | `format.test.ts`, `i18n.test.ts` | localised text, language key and placeholder parity, the version pair |
 | `card.test.ts`, `grid-cell.test.ts` | the card contract and the grid-cell fill |
+| `palette.test.ts` | reading the theme's colours into the canvas palette, and failing a read that came back unresolved or all one colour |
 | `toolchain.test.ts` | the `vite` override |
 
 A change to what the card does comes with a test that fails without it.
@@ -135,7 +136,7 @@ grep -c "BSD-3-Clause" dist/orrery-card.js
 ## Translations
 
 1. Copy `src/localize/languages/en.json` to `<code>.json` and translate every value. Keep the `{placeholders}`.
-2. Import it in `src/localize/localize.ts` as a default import (`import sv from "./languages/sv.json"`) and add it to `LANGUAGE_REGISTRY`, which drives both the lookup and the editor's dropdown.
+2. Import it in `src/localize/localize.ts` the way `en` and `de` are imported (`import * as sv from "./languages/sv.json"`) and add it to `LANGUAGE_REGISTRY`, which drives both the lookup and the editor's dropdown.
 3. Run `npm test`. It checks that every language has the same keys and placeholders as English.
 
 Missing keys fall back to English, so a partial translation is still a useful PR. German uses du, never Sie. Month, weekday and number formats come from the browser's `Intl`, so they don't need translating. Constellation names stay in Latin, as the IAU names them.
@@ -152,6 +153,7 @@ Missing keys fall back to English, so a partial translation is still a useful PR
 | `src/config.ts` | YAML validation, defaults, and the editor's fill-in and tidy-up of defaults |
 | `src/editor.ts` | Visual editor: the title and colour tiles on top, then collapsed groups with a summary line; defaults shown, only changes saved |
 | `src/editor-fields.ts`, `src/editor-art.ts` | What the editor shows, as plain data: the fields per group, the summary lines, and the SVG pictures on the colour-theme and background tiles |
+| `src/styles.ts` | The card's CSS: its `--orr-*` tokens and the three `--orrery-*` overrides a theme or card-mod can set |
 | `src/localize/` | The language packs and the lookup |
 
 The card only redraws when something changes. Keep it that way: a new animation must stop when the card is off screen, when the tab is hidden, and under `prefers-reduced-motion`.
