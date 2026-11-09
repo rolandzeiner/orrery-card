@@ -111,6 +111,9 @@ const JUPITER_MOON_RINGS = JUPITER_MOONS.map((m) => Math.sqrt(m.km / CALLISTO_KM
 const MOON_RING_PX = 15;
 /** Callisto's ring radius at a 520 px card, px. */
 const CALLISTO_RING_PX = 19;
+/** Home needle length past Earth's ring, side-on, at a 520 px card, px:
+ *  its tip lands just outside the Moon's ring. */
+const HOME_NEEDLE_PX = 20;
 /** Turns per second of playback above which a body is left out. */
 const MAX_TURNS_PER_SECOND = 2;
 /** Trail length as a share of the orbit. */
@@ -1102,13 +1105,13 @@ export class OrreryRenderer {
     const flat = Math.hypot(o[0], o[1]);
     // Pointing straight at the viewer it has no direction to show.
     if (flat < 0.02) return;
-    // Clear of Earth's dot and its ring, then 11 px long when side-on.
-    // Turned towards or away from the viewer it shortens, but only to a
-    // third: seen from above, the zenith of a mid-latitude home points
+    // Clear of Earth's dot and its ring, then full length when side-on.
+    // Turned towards or away from the viewer it shortens, but only to
+    // 40 %: seen from above, the zenith of a mid-latitude home points
     // mostly up out of the page, and full foreshortening would tuck the
     // needle under Earth's ring for half the day.
     const base = (this.dotRadius.get("earth") ?? 3.4 * s) + 3;
-    const tip = base + 11 * s * (0.35 + 0.65 * flat);
+    const tip = base + HOME_NEEDLE_PX * s * (0.4 + 0.6 * flat);
     const ux = o[0] / flat;
     const uy = o[1] / flat;
     const x0 = earth[0] + ux * base;
