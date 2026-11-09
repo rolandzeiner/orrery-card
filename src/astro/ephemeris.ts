@@ -39,7 +39,8 @@ export function helio(body: Body, ms: number): Vec3 {
 const length = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
 const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
-function unit(v: Vec3): Vec3 {
+/** `v` scaled to length 1; the zero vector stays zero. */
+export function unit(v: Vec3): Vec3 {
   const l = length(v) || 1;
   return [v[0] / l, v[1] / l, v[2] / l];
 }
