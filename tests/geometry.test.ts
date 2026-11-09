@@ -105,7 +105,10 @@ describe("decor geometry", () => {
     const normal = [0.3, -0.4, 0.866];
     const n = len(normal);
     const axis: [number, number, number] = [normal[0]! / n, normal[1]! / n, normal[2]! / n];
-    const cases: Array<[[number, number, number], number]> = [[axis, 48]];
+    const cases: Array<[[number, number, number], number]> = [
+      [[0, 0, 1], 40],
+      [axis, 48],
+    ];
     for (const [pole, count] of cases) {
       const pts = ringPoints(pole, count);
       expect(pts).toHaveLength(count);
