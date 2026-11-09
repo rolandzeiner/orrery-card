@@ -9,6 +9,7 @@ import {
   ZOOM_MAX,
   ZOOM_MIN,
 } from "../src/render/camera";
+import { makeGeodesic, ringPoints } from "../src/render/decor";
 import { scaleDistance, WorldMapper } from "../src/render/scale";
 import { sorted } from "../src/sorted";
 
@@ -80,5 +81,43 @@ describe("fitSquare", () => {
     expect(fitSquare(400, 300)).toBe(300);
     expect(fitSquare(400, 0)).toBe(400);
     expect(fitSquare(0, 0)).toBe(0);
+  });
+});
+
+describe("decor geometry", () => {
+  const len = (v: readonly number[]): number => Math.hypot(v[0]!, v[1]!, v[2]!);
+
+  it("builds the Sun as a once-subdivided icosahedron on the unit sphere", () => {
+    const { vertices, edges } = makeGeodesic();
+    expect(vertices).toHaveLength(42);
+    expect(edges).toHaveLength(120);
+    for (const v of vertices) expect(len(v)).toBeCloseTo(1, 12);
+    const lengths = edges.map(([a, b]) => {
+      const p = vertices[a]!;
+      const q = vertices[b]!;
+      return len([p[0] - q[0], p[1] - q[1], p[2] - q[2]]);
+    });
+    // Geodesic edges come in two lengths, within 14 % of each other.
+    expect(Math.max(...lengths) / Math.min(...lengths)).toBeLessThan(1.14);
+  });
+
+  it("lays a ring of unit points square to its normal", () => {
+    const raw = [0.3, -0.4, 0.866];
+    const n = len(raw);
+    const tilted: [number, number, number] = [raw[0]! / n, raw[1]! / n, raw[2]! / n];
+    // One normal on each side of ringPoints' |z| < 0.9 switch: the ecliptic
+    // pole (Earth's Moon) and a tilted one, like Saturn's.
+    const cases: Array<[[number, number, number], number]> = [
+      [[0, 0, 1], 40],
+      [tilted, 48],
+    ];
+    for (const [normal, count] of cases) {
+      const pts = ringPoints(normal, count);
+      expect(pts).toHaveLength(count);
+      for (const p of pts) {
+        expect(len(p)).toBeCloseTo(1, 12);
+        expect(p[0] * normal[0] + p[1] * normal[1] + p[2] * normal[2]).toBeCloseTo(0, 12);
+      }
+    }
   });
 });

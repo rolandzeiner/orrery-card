@@ -1,6 +1,6 @@
 {
   "name": "orrery-card",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "private": true,
   "description": "Standalone Lovelace custom card — the solar system in 3D, with real planet positions for any date.",
   "type": "module",
@@ -17,10 +17,10 @@
   },
   "devDependencies": {
     "happy-dom": "21.0.4",
-    "vite-plus": "1.4.0"
+    "vite-plus": "1.5.0"
   },
   "overrides": {
-    "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0"
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.5.0"
   },
   "devEngines": {
     "packageManager": {

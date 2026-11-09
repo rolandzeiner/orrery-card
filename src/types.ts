@@ -12,7 +12,14 @@ export interface HomeAssistant {
   language?: string;
   themes?: { darkMode?: boolean; theme?: string } & Record<string, unknown>;
   selectedTheme?: { theme?: string; dark?: boolean } | null;
-  config?: { time_zone?: string } & Record<string, unknown>;
+  /** `latitude` / `longitude` / `elevation` are the home location from
+   *  Settings → System → General. */
+  config?: {
+    time_zone?: string;
+    latitude?: number;
+    longitude?: number;
+    elevation?: number;
+  } & Record<string, unknown>;
 }
 
 export type DistanceScale = "log" | "sqrt" | "true";
@@ -46,6 +53,12 @@ export interface ResolvedConfig {
   showMoon: boolean;
   /** Draw Pluto, the dwarf planet. */
   showPluto: boolean;
+  /** Io, Europa, Ganymede and Callisto around Jupiter. */
+  showJupiterMoons: boolean;
+  /** A needle from Earth towards the sky above the HA home location. */
+  showHome: boolean;
+  /** Buttons that jump to the previous or next eclipse. */
+  showEclipses: boolean;
   /** Slowly rotate the Sun. Off under prefers-reduced-motion regardless. */
   ambientMotion: boolean;
 }

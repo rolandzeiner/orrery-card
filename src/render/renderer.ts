@@ -9,7 +9,10 @@ import {
   type PlanetDef,
   type PlanetKey,
 } from "../astro/bodies";
+import type { EclipseBody } from "../astro/eclipses";
 import {
+  JUPITER_MOONS,
+  JUPITER_POLE,
   OrbitCache,
   ORBIT_SAMPLES,
   orbitIndex,
@@ -19,6 +22,7 @@ import {
   type TickLabel,
   type Vec3,
 } from "../astro/ephemeris";
+import type { HomeLocation } from "../astro/home";
 import { DAY_MS } from "../const";
 import { sorted } from "../sorted";
 import type { DistanceScale } from "../types";
@@ -41,6 +45,8 @@ export interface RenderOptions {
   showBelt: boolean;
   showMoon: boolean;
   showPluto: boolean;
+  showJupiterMoons: boolean;
+  showHome: boolean;
   /** Spin the Sun with the frame clock. */
   ambient: boolean;
 }
@@ -50,6 +56,9 @@ export interface DateLine {
   big: string;
   sub: string;
   tag: string;
+  /** A shorter tag for when `tag` won't fit between the bottom readouts
+   *  ("SOLAR ECLIPSE" for "ANNULAR SOLAR ECLIPSE"). */
+  tagShort?: string;
   tagIsLive: boolean;
   /** Displayed year × 12 + month (0-based), for lighting the month tick. */
   monthKey: number;
@@ -79,6 +88,11 @@ export interface Frame {
   cam: Camera;
   selected: PlanetKey | null;
   date: DateLine;
+  /** Days of sky time per second while playing, 0 when still. Anything
+   *  that turns faster than about twice a second would only flicker. */
+  rate: number;
+  /** The eclipse the card stands on, if any: lights the Sun–Earth line. */
+  eclipse: EclipseBody | null;
 }
 
 const J2000 = Date.UTC(2000, 0, 1, 12);
@@ -87,10 +101,27 @@ const BELT = makeBelt(760);
 const SUN = makeGeodesic();
 const SATURN_RING = ringPoints(SATURN_POLE, 48);
 const MOON_RING = ringPoints([0, 0, 1], 40);
+const JUPITER_RING = ringPoints(JUPITER_POLE, 40);
+/** Ring radius of each Galilean moon as a share of Callisto's. The square
+ *  root of the real distances, so Io clears Jupiter's dot and Callisto
+ *  stays close. */
+const CALLISTO_KM = Math.max(...JUPITER_MOONS.map((m) => m.km));
+const JUPITER_MOON_RINGS = JUPITER_MOONS.map((m) => Math.sqrt(m.km / CALLISTO_KM));
+/** Earth's Moon's ring radius at a 520 px card, px. */
+const MOON_RING_PX = 15;
+/** Callisto's ring radius at a 520 px card, px. */
+const CALLISTO_RING_PX = 19;
+/** Home needle length past Earth's ring, side-on, at a 520 px card, px:
+ *  its tip lands just outside the Moon's ring. */
+const HOME_NEEDLE_PX = 20;
+/** Turns per second of playback above which a body is left out. */
+const MAX_TURNS_PER_SECOND = 2;
 /** Trail length as a share of the orbit. */
 const TRAIL = 0.08;
 /** Below this card size the corner readouts no longer fit. */
 const MIN_SIZE_FOR_GAUGES = 280;
+/** Radius of the readouts' arcs, as a share of the card's side. */
+const GAUGE_RADIUS = 0.462;
 
 const clamp01 = (v: number): number => Math.max(0, Math.min(1, v));
 
@@ -117,6 +148,8 @@ interface DateLayout {
   subPx: number;
   tag: string;
   subW: number;
+  /** Stacked only: the tag as set on its own line, fitted to the room. */
+  line: { text: string; px: number; track: string };
   box: Rect;
 }
 
@@ -178,8 +211,13 @@ export class OrreryRenderer {
     showBelt: true,
     showMoon: true,
     showPluto: false,
+    showJupiterMoons: false,
+    showHome: false,
     ambient: false,
   };
+  private home: HomeLocation | null = null;
+  /** The current frame's playback rate, days per second. */
+  private rate = 0;
   private planets: ReadonlyArray<PlanetDef> = PLANETS;
   private mapper = new WorldMapper("log", 1);
   private readonly cache = new OrbitCache();
@@ -191,6 +229,8 @@ export class OrreryRenderer {
   private dotRadius = new Map<PlanetKey, number>();
   /** The date's text box this frame, or null when the date is hidden. */
   private dateBox: Rect | null = null;
+  /** The home needle's box this frame, kept clear of planet names. */
+  private needleBox: Rect | null = null;
   // Scratch buffers, reused every frame.
   private readonly w: Vec3 = [0, 0, 0];
   private readonly w2: Vec3 = [0, 0, 0];
@@ -242,13 +282,30 @@ export class OrreryRenderer {
   setOptions(opts: RenderOptions): void {
     if (opts.showPluto !== this.opts.showPluto) {
       this.planets = shownBodies(opts.showPluto);
-      // The cached snapshot has no position for a body that just appeared.
+    }
+    // The cached snapshot has nothing for a layer that just appeared.
+    if (
+      opts.showPluto !== this.opts.showPluto ||
+      opts.showJupiterMoons !== this.opts.showJupiterMoons ||
+      opts.showHome !== this.opts.showHome
+    ) {
       this.sky = null;
     }
     this.opts = opts;
     if (opts.scale !== this.mapper.kind || opts.tilt !== this.mapper.tilt) {
       this.mapper = new WorldMapper(opts.scale, opts.tilt);
     }
+  }
+
+  /** The HA home location the home needle points from. */
+  setHome(home: HomeLocation | null): void {
+    const same =
+      home?.latitude === this.home?.latitude &&
+      home?.longitude === this.home?.longitude &&
+      home?.elevation === this.home?.elevation;
+    if (same) return;
+    this.home = home;
+    this.sky = null;
   }
 
   innerZoom(): number {
@@ -282,8 +339,10 @@ export class OrreryRenderer {
       this.sky = skySnapshot(
         frame.t,
         this.planets.map((p) => p.body),
+        { home: this.opts.showHome ? this.home : null, jupiterMoons: this.opts.showJupiterMoons },
       );
     const sky = this.sky;
+    this.rate = frame.rate;
     const proj = new Projector(frame.cam, S);
 
     this.drawBackground(proj, pal);
@@ -297,10 +356,11 @@ export class OrreryRenderer {
 
     this.projectPlanets(proj, sky);
     if (this.opts.showTrails) this.drawTrails(frame, pal);
+    if (frame.eclipse) this.drawEclipseLine(proj, frame.eclipse, pal);
     this.drawSightLine(frame.selected, pal);
     this.drawPlanets(proj, sky, frame.selected, pal);
     if (this.opts.showLabels) this.drawPlanetLabels(proj, frame.selected, pal);
-    if (this.opts.showReadouts && S >= MIN_SIZE_FOR_GAUGES) this.drawGauges(sky, pal);
+    if (this.gaugesShown()) this.drawGauges(sky, pal);
   }
 
   // ── Layers ─────────────────────────────────────────────────────────────
@@ -402,7 +462,10 @@ export class OrreryRenderer {
     // YEARS") would run into the corner readouts; give the tag its own line.
     const stacked = tag !== "" && subW + tagW > S * 0.44;
     const y3 = stacked ? y2 + subPx * 1.45 : y2;
-    const w = Math.max(bigW, stacked ? Math.max(subW, tagW) : subW + tagW);
+    const line = stacked
+      ? this.fitTag(date, subPx, this.tagRoom(y3))
+      : { text: date.tag, px: subPx, track: "0.18em", w: 0 };
+    const w = Math.max(bigW, stacked ? Math.max(subW, line.w) : subW + tagW);
     const top = y - bigPx * 0.78;
     const bottom = y3 + subPx * 0.35;
     return {
@@ -414,8 +477,52 @@ export class OrreryRenderer {
       subPx,
       tag,
       subW,
+      line,
       box: { x: S / 2 - w / 2, y: top, w, h: bottom - top },
     };
+  }
+
+  /** Width free for a line of text whose baseline is at `y`: between the
+   *  arcs of the two bottom readouts when they're drawn, which close in as
+   *  the line sits lower. */
+  private tagRoom(y: number): number {
+    const S = this.size;
+    if (!this.gaugesShown()) return S * 0.9;
+    const Rg = S * GAUGE_RADIUS;
+    // The arcs end 23° short of the vertical; below their ends, their ends
+    // set the room.
+    const dy = Math.min(y - S / 2, Rg * Math.cos((23 * Math.PI) / 180));
+    return 2 * Math.sqrt(Rg * Rg - dy * dy) - 10;
+  }
+
+  /** The tag on its own line, as wide as it may be: tracked as usual,
+   *  then tighter, then the short form the same two ways, and only past
+   *  all four set smaller. */
+  private fitTag(
+    date: DateLine,
+    px: number,
+    room: number,
+  ): { text: string; px: number; track: string; w: number } {
+    const ctx = this.ctx;
+    ctx.font = this.font(500, px);
+    const texts = date.tagShort ? [date.tag, date.tagShort] : [date.tag];
+    let last = { text: date.tag, px, track: "0.18em", w: 0 };
+    for (const text of texts)
+      for (const track of ["0.18em", "0.06em"]) {
+        this.spacing(track);
+        last = { text, px, track, w: ctx.measureText(text).width };
+        if (last.w <= room) {
+          this.spacing("0px");
+          return last;
+        }
+      }
+    this.spacing("0px");
+    const scale = Math.max(8 / px, room / last.w);
+    return { ...last, px: px * scale, w: last.w * scale };
+  }
+
+  private gaugesShown(): boolean {
+    return this.opts.showReadouts && this.size >= MIN_SIZE_FOR_GAUGES;
   }
 
   /** A soft oval behind the date: the line-work under it is blurred, then
@@ -487,8 +594,10 @@ export class OrreryRenderer {
     if (layout.stacked) {
       ctx.fillStyle = pal.label;
       ctx.fillText(date.sub, cx, layout.y2);
+      ctx.font = this.font(500, layout.line.px);
+      this.spacing(layout.line.track);
       ctx.fillStyle = tagColor;
-      ctx.fillText(date.tag, cx, layout.y3);
+      ctx.fillText(layout.line.text, cx, layout.y3);
     } else {
       const tagW = layout.tag ? ctx.measureText(layout.tag).width : 0;
       const x0 = cx - (layout.subW + tagW) / 2;
@@ -771,6 +880,16 @@ export class OrreryRenderer {
     ctx.restore();
   }
 
+  /** Glyph scale for the card's size: 1 at 520 px. */
+  private sizeScale(): number {
+    return Math.max(0.75, Math.min(1.35, this.size / 520));
+  }
+
+  /** Too fast to draw: it would turn more than about twice a second. */
+  private tooFast(periodDays: number): boolean {
+    return Math.abs(this.rate) / periodDays > MAX_TURNS_PER_SECOND;
+  }
+
   private drawPlanets(
     proj: Projector,
     sky: SkySnapshot,
@@ -778,13 +897,14 @@ export class OrreryRenderer {
     pal: Palette,
   ): void {
     const S = this.size;
-    const sizeScale = Math.max(0.75, Math.min(1.35, S / 520));
+    const sizeScale = this.sizeScale();
     // Far to near, so nearer planets paint over farther ones.
     const order = sorted(
       this.planets,
       (a, b) => (this.screen.get(b.key)?.[2] ?? 0) - (this.screen.get(a.key)?.[2] ?? 0),
     );
     this.dotRadius.clear();
+    this.needleBox = null;
     for (const p of order) {
       const s = this.screen.get(p.key);
       if (!s || !onCanvas(s, S, 30)) continue;
@@ -794,6 +914,7 @@ export class OrreryRenderer {
     }
     const earth = this.screen.get("earth");
     if (this.opts.showMoon && earth) this.drawMoon(proj, sky, earth, sizeScale, pal);
+    if (sky.homeDir && earth) this.drawHomeNeedle(proj, sky.homeDir, sky.homeDay, earth, pal);
   }
 
   private drawPlanet(
@@ -809,7 +930,9 @@ export class OrreryRenderer {
     const sel = selected === p.key;
     const col = sel ? pal.accent2 : pal.accent;
     const saturn = p.body === Body.Saturn;
+    const moons = p.body === Body.Jupiter ? (this.sky?.jupiterMoons ?? null) : null;
     if (saturn) this.drawRing(proj, x, y, r, true, col);
+    if (moons) this.drawJupiterMoons(proj, x, y, r, moons, true, pal);
     this.drawGlow(x, y, r, col, sel ? pal.accent2Clear : pal.accentClear);
     ctx.fillStyle = p.key === "earth" && !sel ? pal.earthCore : col;
     ctx.beginPath();
@@ -817,6 +940,7 @@ export class OrreryRenderer {
     ctx.fill();
     if (p.key === "earth") this.drawEarthRing(x, y, r, col);
     if (saturn) this.drawRing(proj, x, y, r, false, col);
+    if (moons) this.drawJupiterMoons(proj, x, y, r, moons, false, pal);
   }
 
   private drawGlow(x: number, y: number, r: number, col: string, clear: string): void {
@@ -853,15 +977,30 @@ export class OrreryRenderer {
     col: string,
   ): void {
     const ctx = this.ctx;
-    const o = this.r;
-    const R = r * 2.1;
     ctx.strokeStyle = col;
     ctx.globalAlpha = back ? 0.35 : 0.85;
     ctx.lineWidth = 1.1;
     ctx.beginPath();
+    this.ringPath(proj, SATURN_RING, x, y, r * 2.1, back);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  /** Adds the far (`back`) or near half of a ring of radius R around
+   *  (x, y) to the current path. */
+  private ringPath(
+    proj: Projector,
+    ring: ReadonlyArray<Vec3>,
+    x: number,
+    y: number,
+    R: number,
+    back: boolean,
+  ): void {
+    const ctx = this.ctx;
+    const o = this.r;
     let pen = false;
-    for (let i = 0; i <= SATURN_RING.length; i++) {
-      const q = SATURN_RING[i % SATURN_RING.length]!;
+    for (let i = 0; i <= ring.length; i++) {
+      const q = ring[i % ring.length]!;
       proj.rotate(q[0], q[1], q[2], o);
       if (o[2] > 0 === back) {
         const px = x + o[0] * R;
@@ -873,8 +1012,46 @@ export class OrreryRenderer {
         pen = false;
       }
     }
+  }
+
+  /**
+   * Io, Europa, Ganymede and Callisto, drawn like Earth's Moon: faint
+   * rings and real directions, distances compressed. Called twice around
+   * Jupiter's dot, far half first, so the planet hides what passes behind
+   * it. A moon that would turn too fast to follow is left off its ring.
+   */
+  private drawJupiterMoons(
+    proj: Projector,
+    x: number,
+    y: number,
+    r: number,
+    moons: ReadonlyArray<Vec3>,
+    back: boolean,
+    pal: Palette,
+  ): void {
+    const ctx = this.ctx;
+    const s = this.sizeScale();
+    const outer = Math.max(CALLISTO_RING_PX * s, r * 3);
+    const o = this.r;
+    ctx.strokeStyle = pal.orbit;
+    ctx.lineWidth = 0.7;
+    ctx.globalAlpha = back ? 0.16 : 0.26;
+    ctx.beginPath();
+    for (const share of JUPITER_MOON_RINGS)
+      this.ringPath(proj, JUPITER_RING, x, y, outer * share, back);
     ctx.stroke();
+    ctx.fillStyle = pal.moon;
     ctx.globalAlpha = 1;
+    JUPITER_MOONS.forEach((def, i) => {
+      const dir = moons[i];
+      if (!dir || this.tooFast(def.period)) return;
+      proj.rotate(dir[0], dir[1], dir[2], o);
+      if (o[2] > 0 !== back) return;
+      const R = outer * JUPITER_MOON_RINGS[i]!;
+      ctx.beginPath();
+      ctx.arc(x + o[0] * R, y + o[1] * R, 1.3 * s, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   private drawMoon(
@@ -885,7 +1062,7 @@ export class OrreryRenderer {
     pal: Palette,
   ): void {
     const ctx = this.ctx;
-    const R = 15 * sizeScale;
+    const R = MOON_RING_PX * sizeScale;
     const o = this.r;
     ctx.strokeStyle = pal.orbit;
     ctx.globalAlpha = 0.3;
@@ -907,6 +1084,101 @@ export class OrreryRenderer {
     ctx.beginPath();
     ctx.arc(earth[0] + o[0] * R, earth[1] + o[1] * R, 1.8 * sizeScale, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  /**
+   * A needle from Earth towards the sky straight above the HA home: solid
+   * while the Sun is up there, dashed at night. It turns once a day, so it
+   * is left out while playback runs faster than that can be followed.
+   */
+  private drawHomeNeedle(
+    proj: Projector,
+    dir: Vec3,
+    day: boolean,
+    earth: Screen,
+    pal: Palette,
+  ): void {
+    if (this.tooFast(1)) return;
+    const ctx = this.ctx;
+    const s = this.sizeScale();
+    const o = proj.rotate(dir[0], dir[1], dir[2], this.r);
+    const flat = Math.hypot(o[0], o[1]);
+    // Pointing straight at the viewer it has no direction to show.
+    if (flat < 0.02) return;
+    // Clear of Earth's dot and its ring, then full length when side-on.
+    // Turned towards or away from the viewer it shortens, but only to
+    // 40 %: seen from above, the zenith of a mid-latitude home points
+    // mostly up out of the page, and full foreshortening would tuck the
+    // needle under Earth's ring for half the day.
+    const base = (this.dotRadius.get("earth") ?? 3.4 * s) + 3;
+    const tip = base + HOME_NEEDLE_PX * s * (0.4 + 0.6 * flat);
+    const ux = o[0] / flat;
+    const uy = o[1] / flat;
+    const x0 = earth[0] + ux * base;
+    const y0 = earth[1] + uy * base;
+    const x1 = earth[0] + ux * tip;
+    const y1 = earth[1] + uy * tip;
+    const pad = 3;
+    this.needleBox = {
+      x: Math.min(x0, x1) - pad,
+      y: Math.min(y0, y1) - pad,
+      w: Math.abs(x1 - x0) + pad * 2,
+      h: Math.abs(y1 - y0) + pad * 2,
+    };
+    ctx.save();
+    ctx.strokeStyle = pal.accent;
+    ctx.fillStyle = pal.accent;
+    ctx.globalAlpha = o[2] > 0 ? 0.55 : 0.95;
+    ctx.lineWidth = day ? 1.4 : 1.2;
+    ctx.lineCap = "round";
+    if (!day) ctx.setLineDash([2.5, 2.5]);
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(x1, y1, 1.8 * s, 0, Math.PI * 2);
+    if (day) ctx.fill();
+    else ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * On an eclipse, the line from the Sun to Earth lights up: the Moon sits
+   * on it, between the two for a solar eclipse; for a lunar one it runs on
+   * past Earth, dashed, as the shadow the Moon passes through.
+   */
+  private drawEclipseLine(proj: Projector, body: EclipseBody, pal: Palette): void {
+    const earth = this.screen.get("earth");
+    if (!earth) return;
+    const dx = earth[0] - proj.cx;
+    const dy = earth[1] - proj.cy;
+    const d = Math.hypot(dx, dy);
+    if (d < 1) return;
+    const ux = dx / d;
+    const uy = dy / d;
+    const sunR = this.sunRadius(proj);
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.strokeStyle = pal.accent2;
+    ctx.shadowColor = pal.accent2;
+    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.2;
+    ctx.globalAlpha = 0.75;
+    ctx.beginPath();
+    ctx.moveTo(proj.cx + ux * sunR, proj.cy + uy * sunR);
+    ctx.lineTo(earth[0], earth[1]);
+    ctx.stroke();
+    if (body === "lunar") {
+      const shadow = MOON_RING_PX * this.sizeScale() * 1.25;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(earth[0], earth[1]);
+      ctx.lineTo(earth[0] + ux * shadow, earth[1] + uy * shadow);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   private drawPlanetLabels(proj: Projector, selected: PlanetKey | null, pal: Palette): void {
@@ -943,6 +1215,7 @@ export class OrreryRenderer {
     const sunR = this.sunRadius(proj);
     const obstacles: Rect[] = [{ x: proj.cx - sunR, y: proj.cy - sunR, w: sunR * 2, h: sunR * 2 }];
     if (this.dateBox) obstacles.push(this.dateBox);
+    if (this.needleBox) obstacles.push(this.needleBox);
     for (const [key, r] of this.dotRadius) {
       const s = this.screen.get(key);
       if (s) obstacles.push({ x: s[0] - r - 2, y: s[1] - r - 2, w: r * 2 + 4, h: r * 2 + 4 });
@@ -970,7 +1243,7 @@ export class OrreryRenderer {
     const S = this.size;
     const cx = S / 2;
     const cy = S / 2;
-    const Rg = S * 0.462;
+    const Rg = S * GAUGE_RADIUS;
     const span = (44 * Math.PI) / 180;
     const lf = Math.max(8.5, S * 0.017);
     const vf = Math.max(13, S * 0.038);

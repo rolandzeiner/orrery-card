@@ -402,6 +402,28 @@ export const cardStyles = css`
     box-shadow: 0 0 8px var(--orr-accent);
   }
 
+  /* Previous / next eclipse: the label is quiet text, each chevron its
+     own round ghost button, so the hover wash shows which way it goes. */
+  .stepper {
+    display: inline-flex;
+    align-items: center;
+    block-size: 32px;
+    color: var(--orr-muted);
+    font-size: var(--ha-font-size-s, 0.857rem);
+  }
+  .stepper button.icon {
+    inline-size: 32px;
+    block-size: 32px;
+  }
+  .stepper button.icon ha-icon {
+    --mdc-icon-size: 18px;
+  }
+  .stepper-label {
+    padding-inline: 2px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
   /* View controls float on the sky, in the empty band above the orbits. */
   .viewbar {
     position: absolute;
@@ -441,6 +463,14 @@ export const cardStyles = css`
       inline-size: 46px;
       block-size: 46px;
       margin-inline: var(--ha-space-1, 4px);
+    }
+    /* Half a section wide, the eclipse buttons and Now miss sharing a
+       line by a few pixels, and each extra line comes off the sky. */
+    button.now {
+      padding-inline: var(--ha-space-2, 8px);
+    }
+    .stepper-label {
+      padding-inline: 0;
     }
   }
 

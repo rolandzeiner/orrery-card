@@ -10,7 +10,8 @@
     "light_minutes": "{value} Lichtmin.",
     "light_time": "Licht {min} min {sec} s",
     "minutes": "{value} min",
-    "hours": "{value} h"
+    "hours": "{value} h",
+    "readout_eclipse": "{name}, auf ihrem Höhepunkt."
   },
   "controls": {
     "back_month": "Einen Monat zurück",
@@ -27,7 +28,11 @@
     "zoom_in": "Vergrößern",
     "zoom_out": "Verkleinern",
     "view_group": "Ansicht",
-    "time_group": "Zeit"
+    "time_group": "Zeit",
+    "eclipse": "Finsternis",
+    "eclipse_group": "Finsternisse",
+    "previous_eclipse": "Vorige Finsternis",
+    "next_eclipse": "Nächste Finsternis"
   },
   "speed": {
     "back_year": "1 Jahr/s zurück",
@@ -48,6 +53,25 @@
     "waning": "abnehmend",
     "full": "Vollmond",
     "new": "Neumond"
+  },
+  "eclipse": {
+    "solar": "Sonnenfinsternis",
+    "lunar": "Mondfinsternis",
+    "solar_partial": "Partielle Sonnenfinsternis",
+    "solar_annular": "Ringförmige Sonnenfinsternis",
+    "solar_total": "Totale Sonnenfinsternis",
+    "lunar_penumbral": "Halbschatten-Mondfinsternis",
+    "lunar_partial": "Partielle Mondfinsternis",
+    "lunar_total": "Totale Mondfinsternis",
+    "home_covered": "Von deinem Zuhause aus bedeckt der Mond bis zu {percent} der Sonne.",
+    "home_total": "Von deinem Zuhause aus ist sie total.",
+    "home_annular": "Von deinem Zuhause aus ist sie ringförmig: Ein Ring der Sonne bleibt um den Mond sichtbar.",
+    "home_seen_lunar": "Von deinem Zuhause aus ist sie zu sehen.",
+    "home_sun_sets": "Von deinem Zuhause aus geht die Sonne währenddessen unter.",
+    "home_sun_rises": "Von deinem Zuhause aus geht die Sonne währenddessen auf.",
+    "home_moon_sets": "Von deinem Zuhause aus geht der Mond währenddessen unter.",
+    "home_moon_rises": "Von deinem Zuhause aus geht der Mond währenddessen auf.",
+    "home_unseen": "Von deinem Zuhause aus ist sie nicht zu sehen."
   },
   "planet": {
     "mercury": "Merkur",
@@ -92,6 +116,12 @@
     "show_moon": "Mond",
     "show_pluto": "Pluto",
     "show_pluto_helper": "Ein Zwergplanet. Seine Bahn reicht über die des Neptun hinaus. Läuft sie über den Kartenrand, zoom heraus.",
+    "show_jupiter_moons": "Jupitermonde",
+    "show_jupiter_moons_helper": "Io, Europa, Ganymed und Kallisto. Die Abstände sind gestaucht, damit du sie siehst; die Richtungen sind echt.",
+    "show_home": "Wohin dein Zuhause zeigt",
+    "show_home_helper": "Eine Linie von der Erde zeigt auf den Himmel direkt über deinem Zuhause, wie in Home Assistant eingestellt. Durchgezogen bei Tag, gestrichelt bei Nacht.",
+    "show_eclipses": "Finsternis-Tasten",
+    "show_eclipses_helper": "Springe zur vorigen oder nächsten Sonnen- oder Mondfinsternis. Braucht die Zeitsteuerung.",
     "ambient_motion": "Rotierende Sonne",
     "ambient_motion_helper": "Hält die Karte in Bewegung. Schalte das aus, um auf Wandtablets Strom zu sparen.",
     "groups": {
@@ -105,7 +135,6 @@
       "without_two": "Ohne {a} und {b}",
       "shown_count": "{n} von {total} Ebenen eingeblendet",
       "sun_still": "Sonne steht still",
-      "show_pluto": "Pluto",
       "show_labels": "Namen",
       "show_trails": "Spuren",
       "show_moon": "Mond",
@@ -119,7 +148,13 @@
       "show_controls": "Zeitsteuerung",
       "show_date": "Datum",
       "show_readouts": "Messwerte",
-      "all_hidden": "Alles ausgeblendet"
+      "all_hidden": "Alles ausgeblendet",
+      "defaults_shown": "Standard-Ebenen",
+      "with_extras": "mit {list}",
+      "with_pluto": "Pluto",
+      "with_jupiter_moons": "den Jupitermonden",
+      "with_home": "deinem Zuhause",
+      "show_eclipses": "Finsternisse"
     }
   }
 }

@@ -90,13 +90,27 @@ describe("group summaries", () => {
   const line = (id: "sky" | "view" | "controls", config: Record<string, unknown> = {}): string =>
     groupSummary(id, config, en, "en");
 
-  it("names what the sky hides", () => {
-    expect(line("sky")).toBe("Without Pluto");
-    expect(line("sky", { show_pluto: true })).toBe("Everything shown");
-    expect(line("sky", { show_moon: false })).toBe("Without Pluto and the Moon");
-    expect(line("sky", { show_moon: false, show_trails: false })).toBe("3 of 6 layers shown");
+  it("names the default layers the sky hides and the extras it shows", () => {
+    expect(line("sky")).toBe("Default layers");
+    expect(line("sky", { show_pluto: true })).toBe("Default layers · with Pluto");
+    expect(line("sky", { show_moon: false })).toBe("Without the Moon");
+    expect(line("sky", { show_moon: false, show_trails: false })).toBe(
+      "Without trails and the Moon",
+    );
+    expect(line("sky", { show_moon: false, show_trails: false, show_belt: false })).toBe(
+      "2 of 5 layers shown",
+    );
+    expect(line("sky", { show_moon: false, show_home: true, show_jupiter_moons: true })).toBe(
+      "Without the Moon · with Jupiter's moons and your home",
+    );
+    expect(line("sky", { show_pluto: true, show_jupiter_moons: true, show_home: true })).toBe(
+      "Everything shown",
+    );
     expect(line("sky", { show_pluto: true, ambient_motion: false })).toBe(
-      "Everything shown · Sun at rest",
+      "Default layers · with Pluto · Sun at rest",
+    );
+    expect(groupSummary("sky", { show_pluto: true, show_home: true }, tr("de"), "de")).toBe(
+      "Standard-Ebenen · mit Pluto und deinem Zuhause",
     );
   });
 
@@ -113,6 +127,9 @@ describe("group summaries", () => {
   it("lists the controls and readouts that are on", () => {
     expect(line("controls")).toBe("Time controls · Date · Readouts");
     expect(line("controls", { show_date: false })).toBe("Time controls · Readouts");
+    expect(line("controls", { show_eclipses: true })).toBe(
+      "Time controls · Date · Readouts · Eclipses",
+    );
     expect(line("controls", { show_controls: false, show_date: false, show_readouts: false })).toBe(
       "All hidden",
     );

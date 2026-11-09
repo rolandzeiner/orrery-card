@@ -1,4 +1,4 @@
-import type { Vec3 } from "../astro/ephemeris";
+import { unit, type Vec3 } from "../astro/ephemeris";
 
 /** Deterministic PRNG (LCG), so the star field and belt look the same on
  *  every load and every card instance. */
@@ -83,10 +83,6 @@ export interface Wireframe {
  *  (42 vertices, 120 edges). */
 export function makeGeodesic(): Wireframe {
   const g = (1 + Math.sqrt(5)) / 2;
-  const norm = (p: Vec3): Vec3 => {
-    const l = Math.hypot(p[0], p[1], p[2]);
-    return [p[0] / l, p[1] / l, p[2] / l];
-  };
   const v: Vec3[] = (
     [
       [-1, g, 0],
@@ -102,7 +98,7 @@ export function makeGeodesic(): Wireframe {
       [-g, 0, -1],
       [-g, 0, 1],
     ] as Vec3[]
-  ).map(norm);
+  ).map((p) => unit(p));
   const faces: ReadonlyArray<readonly [number, number, number]> = [
     [0, 11, 5],
     [0, 5, 1],
@@ -132,7 +128,7 @@ export function makeGeodesic(): Wireframe {
     if (hit !== undefined) return hit;
     const pa = v[a]!;
     const pb = v[b]!;
-    v.push(norm([(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2]));
+    v.push(unit([(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2]));
     mids.set(key, v.length - 1);
     return v.length - 1;
   };
@@ -159,11 +155,15 @@ export function makeGeodesic(): Wireframe {
   return { vertices: v, edges: [...edges.values()] };
 }
 
-/** Unit circle in the plane perpendicular to `normal`, as `n` points. */
+/** Unit circle in the plane perpendicular to `normal` (a unit vector), as
+ *  `n` points. */
 export function ringPoints(normal: Vec3, n: number): Vec3[] {
-  let u: Vec3 = [normal[1], -normal[0], 0];
-  const ul = Math.hypot(u[0], u[1], u[2]) || 1;
-  u = [u[0] / ul, u[1] / ul, u[2] / ul];
+  // A first axis in the plane: normal × ecliptic pole, or, within about
+  // 26° of either pole (|z| ≥ 0.9), where that product shrinks towards
+  // zero (Earth's Moon's normal is the pole itself), normal × x axis.
+  const u = unit(
+    Math.abs(normal[2]) < 0.9 ? [normal[1], -normal[0], 0] : [0, normal[2], -normal[1]],
+  );
   const w: Vec3 = [
     normal[1] * u[2] - normal[2] * u[1],
     normal[2] * u[0] - normal[0] * u[2],

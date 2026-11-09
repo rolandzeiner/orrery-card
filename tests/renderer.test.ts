@@ -30,12 +30,15 @@ const ALL_ON: RenderOptions = {
   showBelt: true,
   showMoon: true,
   showPluto: false,
+  showJupiterMoons: false,
+  showHome: false,
   ambient: false,
 };
+const VIENNA = { latitude: 48.2082, longitude: 16.3738, elevation: 190 };
 
 function frame(cam: Camera, selected: Frame["selected"] = null, t = T): Frame {
   const date = fmt.dateLine(t, { live: false, playing: false, speed: "month", now: T });
-  return { t, ts: 1000, cam, selected, date };
+  return { t, ts: 1000, cam, selected, date, rate: 0, eclipse: null };
 }
 
 function setup(size = 480, opts: RenderOptions = ALL_ON) {
@@ -105,6 +108,56 @@ describe("OrreryRenderer.draw", () => {
     expect(fake.texts()).toContain("PLUTO");
   });
 
+  it("draws Jupiter's four moons only when they're switched on", () => {
+    const arcs = (opts: RenderOptions, rate = 0): number => {
+      const { fake, renderer } = setup(480, opts);
+      renderer.draw({ ...frame(CAM), rate });
+      return fake.calls.filter(([name]) => name === "arc").length;
+    };
+    const off = arcs(ALL_ON);
+    // Four moons; at most one hides behind Jupiter's dot.
+    expect(arcs({ ...ALL_ON, showJupiterMoons: true }) - off).toBeGreaterThanOrEqual(3);
+    // At 1 year/s even Callisto would turn 22 times a second: off its ring.
+    expect(arcs({ ...ALL_ON, showJupiterMoons: true }, 365.25)).toBe(off);
+  });
+
+  it("points the home needle only with a home location, and drops it in fast playback", () => {
+    const needles = (home: typeof VIENNA | null, rate = 0): number => {
+      const { fake, renderer } = setup(480, { ...ALL_ON, showHome: true });
+      renderer.setHome(home);
+      renderer.draw({ ...frame({ az: 1.1, el: Math.PI / 2, zoom: 1 }), rate });
+      return fake.calls.filter(([name]) => name === "setLineDash" || name === "save").length;
+    };
+    const none = needles(null);
+    expect(needles(VIENNA)).toBeGreaterThan(none);
+    expect(needles(VIENNA, 7)).toBe(none);
+  });
+
+  it("dashes the home needle at night and draws it solid by day", () => {
+    const dashes = (t: number): number => {
+      const { fake, renderer } = setup(480, { ...ALL_ON, showHome: true, showTrails: false });
+      renderer.setHome(VIENNA);
+      renderer.draw(frame({ az: 1.1, el: Math.PI / 2, zoom: 1 }, null, t));
+      return fake.calls.filter(
+        ([name, args]) => name === "setLineDash" && (args[0] as number[]).length > 0,
+      ).length;
+    };
+    // Vienna: noon and midnight UTC are 13:00 and 01:00 local.
+    expect(dashes(Date.UTC(2026, 8, 26, 11))).toBe(0);
+    expect(dashes(Date.UTC(2026, 8, 26, 23))).toBe(1);
+  });
+
+  it("lights the Sun–Earth line on an eclipse, with the shadow past Earth for a lunar one", () => {
+    const lines = (eclipse: Frame["eclipse"]): Array<unknown[]> => {
+      const { fake, renderer } = setup(480, { ...ALL_ON, showTrails: false });
+      renderer.draw({ ...frame(CAM), eclipse });
+      return fake.calls.filter(([name]) => name === "setLineDash").map(([, args]) => args);
+    };
+    expect(lines(null)).toHaveLength(0);
+    expect(lines("solar")).toHaveLength(0);
+    expect(lines("lunar")).toEqual([[[2, 3]]]);
+  });
+
   it("frosts the line-work behind the date, and only when the date is shown", () => {
     const shown = setup();
     shown.renderer.draw(frame({ az: 1.1, el: Math.PI / 2, zoom: 1 }));
@@ -127,6 +180,22 @@ describe("OrreryRenderer.draw", () => {
     expect(wide.fake.texts()).toContain("  ·  10 YEARS/S");
   });
 
+  it("falls back to the short eclipse tag where the long one would cross the readouts", () => {
+    const date = {
+      ...fmt.dateLine(T, { live: false, playing: false, speed: "month", now: T }),
+      tag: "RINGFÖRMIGE SONNENFINSTERNIS",
+      tagShort: "SONNENFINSTERNIS",
+    };
+    const narrow = setup(360);
+    narrow.renderer.draw({ ...frame(CAM), date });
+    expect(narrow.fake.texts()).toContain("SONNENFINSTERNIS");
+    expect(narrow.fake.texts()).not.toContain("RINGFÖRMIGE SONNENFINSTERNIS");
+
+    const wide = setup(900);
+    wide.renderer.draw({ ...frame(CAM), date });
+    expect(wide.fake.texts()).toContain("  ·  RINGFÖRMIGE SONNENFINSTERNIS");
+  });
+
   it("hides the corner readouts on a card too small for them", () => {
     const { fake, renderer } = setup(260);
     renderer.draw(frame(CAM));
@@ -142,6 +211,7 @@ describe("OrreryRenderer.draw", () => {
       [{ scale: "true" }, { az: 2, el: 0.05, zoom: 20 }, "mercury"],
       [{ scale: "sqrt", tilt: 8 }, { az: -1, el: 0.8, zoom: 3 }, "neptune"],
       [{ scale: "true", showPluto: true, tilt: 8 }, { az: 0.3, el: 0.05, zoom: 0.5 }, "pluto"],
+      [{ showJupiterMoons: true, showHome: true }, { az: 0.3, el: 0.02, zoom: 6 }, "jupiter"],
     ];
     for (const [opts, cam, selected] of cases) {
       const { renderer } = setup(420, { ...ALL_ON, ...opts });

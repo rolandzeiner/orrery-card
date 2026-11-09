@@ -98,7 +98,7 @@ describe("editor", () => {
       ) ?? []),
     ];
     expect(panels.map((p) => p.header)).toEqual(["Sky", "View", "Controls and readouts"]);
-    expect(panels[0]?.secondary).toBe("Without Pluto and the Moon");
+    expect(panels[0]?.secondary).toBe("Without the Moon");
     expect(forms(editor)).toHaveLength(1);
 
     panels[0]!.dispatchEvent(
@@ -111,6 +111,8 @@ describe("editor", () => {
       "show_labels",
       "show_trails",
       "show_moon",
+      "show_jupiter_moons",
+      "show_home",
     ]);
     expect(more?.schema.map((f) => f.name)).toEqual(["show_belt", "show_ticks", "ambient_motion"]);
     expect(common?.data.show_moon).toBe(false);
