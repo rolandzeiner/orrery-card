@@ -102,19 +102,21 @@ describe("decor geometry", () => {
   });
 
   it("lays a ring of unit points square to its normal", () => {
-    const normal = [0.3, -0.4, 0.866];
-    const n = len(normal);
-    const axis: [number, number, number] = [normal[0]! / n, normal[1]! / n, normal[2]! / n];
+    const raw = [0.3, -0.4, 0.866];
+    const n = len(raw);
+    const tilted: [number, number, number] = [raw[0]! / n, raw[1]! / n, raw[2]! / n];
+    // One normal on each side of ringPoints' |z| < 0.9 switch: the ecliptic
+    // pole (Earth's Moon) and a tilted one, like Saturn's.
     const cases: Array<[[number, number, number], number]> = [
       [[0, 0, 1], 40],
-      [axis, 48],
+      [tilted, 48],
     ];
-    for (const [pole, count] of cases) {
-      const pts = ringPoints(pole, count);
+    for (const [normal, count] of cases) {
+      const pts = ringPoints(normal, count);
       expect(pts).toHaveLength(count);
       for (const p of pts) {
         expect(len(p)).toBeCloseTo(1, 12);
-        expect(p[0] * pole[0] + p[1] * pole[1] + p[2] * pole[2]).toBeCloseTo(0, 12);
+        expect(p[0] * normal[0] + p[1] * normal[1] + p[2] * normal[2]).toBeCloseTo(0, 12);
       }
     }
   });

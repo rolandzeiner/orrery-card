@@ -42,16 +42,17 @@ describe("stepping through eclipses", () => {
   });
 
   it("never stays on the eclipse it stands on when stepping forward", () => {
-    // The engine searches from the new or full moon, and about a third of
-    // eclipses peak before it: these two once came back to themselves.
+    // The engine searches from the next new or full moon, and about half
+    // of all eclipses peak before it, so a search from just past such a
+    // peak finds the same eclipse again. These two are such eclipses.
     for (const peak of [
       Date.UTC(1800, 3, 24, 0, 23, 31, 10),
       Date.UTC(1802, 2, 19, 11, 15, 0, 682),
     ])
       expect(must(nextEclipse(peak)).peak).toBeGreaterThan(peak + MINUTE);
-    // Two years of eclipses, each step moving on: every kind of eclipse
-    // comes round, and the search stays well inside the time limit even
-    // under coverage instrumentation.
+    // Ten eclipses, February 2026 to January 2028, each one later than the
+    // last. Kept short to stay well inside Vitest's 5 s timeout under
+    // coverage.
     let t = Date.UTC(2026, 0, 1);
     for (let i = 0; i < 10; i++) {
       const e = must(nextEclipse(t));

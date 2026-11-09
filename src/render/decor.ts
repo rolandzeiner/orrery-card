@@ -158,8 +158,9 @@ export function makeGeodesic(): Wireframe {
 /** Unit circle in the plane perpendicular to `normal` (a unit vector), as
  *  `n` points. */
 export function ringPoints(normal: Vec3, n: number): Vec3[] {
-  // A first axis in the plane: square to the normal and to the ecliptic
-  // pole, or, when the normal is that pole (Earth's Moon), to the x axis.
+  // A first axis in the plane: normal × ecliptic pole, or, within about
+  // 26° of either pole (|z| ≥ 0.9), where that product shrinks towards
+  // zero (Earth's Moon's normal is the pole itself), normal × x axis.
   const u = unit(
     Math.abs(normal[2]) < 0.9 ? [normal[1], -normal[0], 0] : [0, normal[2], -normal[1]],
   );
