@@ -78,7 +78,8 @@ The suites are in `tests/` and import from `vite-plus/test`. Most run in plain N
 
 | Suite | Covers |
 |---|---|
-| `ephemeris.test.ts` | planet positions, orbits, ticks and readouts |
+| `ephemeris.test.ts` | planet positions, orbits, ticks and readouts, the home zenith and Jupiter's moons |
+| `eclipses.test.ts` | stepping through eclipses, how they look from home, and their wording |
 | `geometry.test.ts`, `renderer.test.ts`, `labels.test.ts` | projection, drawing and label placement |
 | `interaction.test.ts` | keyboard map, pointer gestures, playback and date stepping |
 | `config.test.ts`, `editor-fields.test.ts`, `editor.test.ts` | config validation and defaults, the editor's fields and summaries |
@@ -147,7 +148,7 @@ Missing keys fall back to English, so a partial translation is still a useful PR
 |---|---|
 | `src/orrery-card.ts` | The Lit element: config, lifecycle, controls, pointer and keyboard input |
 | `src/render/` | Canvas renderer, camera projection, distance scales, label placement, palette |
-| `src/astro/` | Planet table and the astronomy-engine wrappers (orbits, ticks, readouts) |
+| `src/astro/` | Planet table and the astronomy-engine wrappers (orbits, ticks, readouts, the home location, Jupiter's moons, eclipses) |
 | `src/format.ts` | Everything localised: dates, numbers, readout text |
 | `src/interaction.ts` | Keyboard map, pointer gestures, playback and date stepping; no DOM, so it is unit-tested directly |
 | `src/config.ts` | YAML validation, defaults, and the editor's fill-in and tidy-up of defaults |

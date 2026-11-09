@@ -31,10 +31,10 @@ The solar system in 3D for your Home Assistant dashboard: where the eight planet
 
 - **Real positions for any date**, within 1 arcminute of NASA JPL data, calculated by [Astronomy Engine](https://github.com/cosinekitty/astronomy) (VSOP87).
 - **A 3D view you can turn**: drag to rotate, pinch to zoom, or switch between tilted, from above and edge-on.
-- **Time travel**: step a day or a month, jump to a date, or play time forward or back at up to 10 years a second.
+- **Time travel**: step by day or month, jump to a date or an eclipse, or play forward or back, up to 10 years a second.
 - **Tap a planet** to see its constellation, its distance from Earth and the Sun, and how long its light takes to reach you.
 - **Time marks on every orbit**, in equal steps of time, so Mercury visibly speeds up near the Sun. Earth's orbit shows the months.
-- **Readouts and extras**: Moon phase and planet distances in the corners, the Moon, the asteroid belt, Saturn's ring, and Pluto if you want it.
+- **Readouts and extras**: Moon phase and distances in the corners, the Moon, Jupiter's moons, the asteroid belt, Saturn's ring, Pluto, and where your home faces.
 - **Four colour themes on two backgrounds**: an always-dark sky, or your theme's card in light or dark mode.
 - **Light on wall tablets**: redraws only when something changes and pauses off screen. Works by keyboard and screen reader, in English and German.
 
@@ -83,6 +83,9 @@ type: custom:orrery-card
 | `show_belt` | `true` | The asteroid belt. It leaves the Kirkwood gaps open. |
 | `show_moon` | `true` | The Moon next to Earth. Its distance is exaggerated so you can see it; its direction is real. |
 | `show_pluto` | `false` | Pluto, the dwarf planet, on its tilted, stretched orbit. Its orbit reaches past Neptune's, so on the `sqrt` and `true` scales part of it runs off the card until you zoom out. |
+| `show_jupiter_moons` | `false` | Io, Europa, Ganymede and Callisto around Jupiter. Their distances are compressed so you can see them; their directions are real. |
+| `show_home` | `false` | A needle from Earth towards the sky straight above your home, from the location in Settings → System → General. Solid while the Sun is up there, dashed at night. |
+| `show_eclipses` | `false` | Buttons next to the date that jump to the previous or next solar or lunar eclipse. Needs `show_controls`. |
 | `ambient_motion` | `true` | Slowly rotates the Sun. Turn it off to save power on a wall tablet. It's always off if your device asks for reduced motion. |
 
 The card follows your Home Assistant language and falls back to English.
@@ -121,6 +124,8 @@ Set these variables in a theme, or with card-mod, to override any colour theme:
 
 Below the sky, the time controls step back or forward by a month or a day, play and pause, set the playback speed, and jump to a date. **Now** returns to the present; its dot glows while the card shows the live sky.
 
+With `show_eclipses`, the **‹ Eclipse ›** buttons jump to the peak of the previous or next eclipse, solar or lunar. The date names it, the line from the Sun to Earth lights up, and the text below the sky says how it looks from your home: how much of the Sun the Moon covers, whether the Sun or Moon sets or rises while it's under way, or that it can't be seen there. Any other move in time leaves the eclipse.
+
 The small bar at the top of the sky changes the viewing angle and zooms in or out, so everything you can do by dragging also works with a tap. Every control is a real button or input, the sky has a label with the date shown, and screen readers announce a planet's details when you select it. In forced-colours mode, focus rings use the system colour.
 
 ## Examples
@@ -146,7 +151,9 @@ appearance: theme
 
 - **Distances are compressed** on the `log` and `sqrt` scales. Use `scale: true` for true distances.
 - **Planet sizes are not to scale.** At true size, every planet would be smaller than a pixel.
-- **The Moon's distance from Earth is exaggerated.** Its direction is real.
+- **The Moon's distance from Earth is exaggerated.** Its direction is real. So are those of Jupiter's moons, whose distances are compressed.
+- **Fast bodies are left out during fast playback.** The home needle turns once a day and Io every 1.8 days; when one would turn more than twice a second, it isn't drawn until playback slows or stops.
+- **How an eclipse looks from home ignores refraction and the terrain**, so near sunrise or sunset it can be off by a few minutes.
 - **Orbit tilts are real only at `tilt: 1`.**
 - **Dates run from 1800 to 2200.**
 
