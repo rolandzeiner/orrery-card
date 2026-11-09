@@ -464,6 +464,14 @@ export const cardStyles = css`
       block-size: 46px;
       margin-inline: var(--ha-space-1, 4px);
     }
+    /* Half a section wide, the eclipse buttons and Now miss sharing a
+       line by a few pixels, and each extra line comes off the sky. */
+    button.now {
+      padding-inline: var(--ha-space-2, 8px);
+    }
+    .stepper-label {
+      padding-inline: 0;
+    }
   }
 
   /* ── Accessibility primitives ─────────────────────────────────────── */
