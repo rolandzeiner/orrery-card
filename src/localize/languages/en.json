@@ -10,7 +10,8 @@
     "light_minutes": "{value} light-min",
     "light_time": "light {min} min {sec} s",
     "minutes": "{value} min",
-    "hours": "{value} h"
+    "hours": "{value} h",
+    "readout_eclipse": "{name}, at its deepest."
   },
   "controls": {
     "back_month": "Back one month",
@@ -27,7 +28,11 @@
     "zoom_in": "Zoom in",
     "zoom_out": "Zoom out",
     "view_group": "View",
-    "time_group": "Time"
+    "time_group": "Time",
+    "eclipse": "Eclipse",
+    "eclipse_group": "Eclipses",
+    "previous_eclipse": "Previous eclipse",
+    "next_eclipse": "Next eclipse"
   },
   "speed": {
     "back_year": "1 year/s back",
@@ -48,6 +53,25 @@
     "waning": "waning",
     "full": "full moon",
     "new": "new moon"
+  },
+  "eclipse": {
+    "solar": "Solar eclipse",
+    "lunar": "Lunar eclipse",
+    "solar_partial": "Partial solar eclipse",
+    "solar_annular": "Annular solar eclipse",
+    "solar_total": "Total solar eclipse",
+    "lunar_penumbral": "Penumbral lunar eclipse",
+    "lunar_partial": "Partial lunar eclipse",
+    "lunar_total": "Total lunar eclipse",
+    "home_covered": "From your home, the Moon covers up to {percent} of the Sun.",
+    "home_total": "From your home, it's total.",
+    "home_annular": "From your home, it's annular: a ring of Sun stays around the Moon.",
+    "home_seen_lunar": "You can see it from your home.",
+    "home_sun_sets": "From your home, the Sun sets while it's under way.",
+    "home_sun_rises": "From your home, the Sun rises while it's under way.",
+    "home_moon_sets": "From your home, the Moon sets while it's under way.",
+    "home_moon_rises": "From your home, the Moon rises while it's under way.",
+    "home_unseen": "It can't be seen from your home."
   },
   "planet": {
     "mercury": "Mercury",
@@ -92,6 +116,12 @@
     "show_moon": "Moon",
     "show_pluto": "Pluto",
     "show_pluto_helper": "A dwarf planet. Its orbit reaches past Neptune's. If it runs off the card, zoom out.",
+    "show_jupiter_moons": "Jupiter's moons",
+    "show_jupiter_moons_helper": "Io, Europa, Ganymede and Callisto. Their distances are compressed so you can see them; their directions are real.",
+    "show_home": "Where your home faces",
+    "show_home_helper": "A line from Earth points at the sky straight above your home, as set in Home Assistant. Solid by day, dashed at night.",
+    "show_eclipses": "Eclipse buttons",
+    "show_eclipses_helper": "Jump to the previous or next solar or lunar eclipse. Needs the time controls.",
     "ambient_motion": "Rotating Sun",
     "ambient_motion_helper": "Keeps the card moving. Turn it off to save power on wall tablets.",
     "groups": {
@@ -105,7 +135,6 @@
       "without_two": "Without {a} and {b}",
       "shown_count": "{n} of {total} layers shown",
       "sun_still": "Sun at rest",
-      "show_pluto": "Pluto",
       "show_labels": "names",
       "show_trails": "trails",
       "show_moon": "the Moon",
@@ -119,7 +148,13 @@
       "show_controls": "Time controls",
       "show_date": "Date",
       "show_readouts": "Readouts",
-      "all_hidden": "All hidden"
+      "all_hidden": "All hidden",
+      "defaults_shown": "Default layers",
+      "with_extras": "with {list}",
+      "with_pluto": "Pluto",
+      "with_jupiter_moons": "Jupiter's moons",
+      "with_home": "your home",
+      "show_eclipses": "Eclipses"
     }
   }
 }

@@ -1,4 +1,5 @@
 import type { PlanetKey } from "./astro/bodies";
+import type { Eclipse, HomeView } from "./astro/eclipses";
 import { lightSeconds, type SkySnapshot } from "./astro/ephemeris";
 import { DAY_MS } from "./const";
 import { localize } from "./localize/localize";
@@ -151,6 +152,29 @@ export class CardFormat implements Texts {
     return this.t(`planet.${key}`);
   }
 
+  /** "Total solar eclipse". */
+  eclipseName(e: Pick<Eclipse, "body" | "type">): string {
+    return this.t(`eclipse.${e.body}_${e.type}`);
+  }
+
+  /** One sentence on how an eclipse looks from the HA home. */
+  eclipseFromHome(e: Pick<Eclipse, "body">, view: HomeView): string {
+    switch (view.visibility) {
+      case "seen":
+        if (e.body === "lunar") return this.t("eclipse.home_seen_lunar");
+        if (view.type === "total" || view.type === "annular")
+          return this.t(`eclipse.home_${view.type}`);
+        return this.t("eclipse.home_covered", {
+          percent: this.percent.format(view.obscuration ?? 0),
+        });
+      case "sets":
+      case "rises":
+        return this.t(`eclipse.home_${e.body === "solar" ? "sun" : "moon"}_${view.visibility}`);
+      case "unseen":
+        return this.t("eclipse.home_unseen");
+    }
+  }
+
   speedLabel(key: SpeedKey): string {
     return this.t(`speed.${key}`);
   }
@@ -166,18 +190,31 @@ export class CardFormat implements Texts {
 
   dateLine(
     t: number,
-    state: { live: boolean; playing: boolean; speed: SpeedKey; now: number },
+    state: {
+      live: boolean;
+      playing: boolean;
+      speed: SpeedKey;
+      now: number;
+      /** The eclipse the card stands on, which takes the tag. */
+      eclipse?: Pick<Eclipse, "body" | "type">;
+    },
   ): DateLine {
     const [year, month, day] = this.ymd(t);
+    const eclipse = !state.live && !state.playing ? state.eclipse : undefined;
     const tag = state.live
       ? this.t("card.live")
       : state.playing
         ? this.speedLabel(state.speed)
-        : this.offset(t, state.now);
+        : eclipse
+          ? this.eclipseName(eclipse)
+          : this.offset(t, state.now);
     return {
       big: `${String(day).padStart(2, "0")} ${this.monthLabel(month - 1)} ${year}`,
       sub: `${clean(this.weekday.format(t))} · ${this.time.format(t)}`,
       tag: tag.toLocaleUpperCase(this.lang),
+      ...(eclipse
+        ? { tagShort: this.t(`eclipse.${eclipse.body}`).toLocaleUpperCase(this.lang) }
+        : {}),
       tagIsLive: state.live,
       monthKey: year * 12 + (month - 1),
       year,

@@ -41,6 +41,9 @@ export type FieldName =
   | "show_belt"
   | "show_moon"
   | "show_pluto"
+  | "show_jupiter_moons"
+  | "show_home"
+  | "show_eclipses"
   | "ambient_motion";
 
 export interface EditorField {
@@ -135,6 +138,8 @@ export const GROUPS: readonly Group[] = [
       toggle("show_labels"),
       toggle("show_trails"),
       toggle("show_moon"),
+      toggle("show_jupiter_moons"),
+      toggle("show_home"),
     ],
     more: [toggle("show_belt"), toggle("show_ticks"), toggle("ambient_motion")],
   },
@@ -154,7 +159,12 @@ export const GROUPS: readonly Group[] = [
   {
     id: "controls",
     icon: "mdi:gesture-tap-button",
-    common: () => [toggle("show_controls"), toggle("show_date"), toggle("show_readouts")],
+    common: () => [
+      toggle("show_controls"),
+      toggle("show_date"),
+      toggle("show_readouts"),
+      toggle("show_eclipses"),
+    ],
     more: [],
   },
 ];
@@ -181,9 +191,9 @@ export function fallbackSchema(t: Translate): HaFormSchema[] {
   }));
 }
 
-/** The sky's layers, in the order a summary names the hidden ones. */
+/** The sky's layers that are on by default, in the order a summary names
+ *  the hidden ones. */
 const SKY_LAYERS = [
-  ["show_pluto", "showPluto"],
   ["show_labels", "showLabels"],
   ["show_trails", "showTrails"],
   ["show_moon", "showMoon"],
@@ -191,21 +201,34 @@ const SKY_LAYERS = [
   ["show_ticks", "showTicks"],
 ] as const satisfies ReadonlyArray<readonly [FieldName, keyof ResolvedConfig]>;
 
+/** The layers that are off by default, which a summary names when shown. */
+const SKY_EXTRAS = [
+  ["with_pluto", "showPluto"],
+  ["with_jupiter_moons", "showJupiterMoons"],
+  ["with_home", "showHome"],
+] as const satisfies ReadonlyArray<readonly [string, keyof ResolvedConfig]>;
+
 const CONTROLS = [
   ["show_controls", "showControls"],
   ["show_date", "showDate"],
   ["show_readouts", "showReadouts"],
+  ["show_eclipses", "showEclipses"],
 ] as const satisfies ReadonlyArray<readonly [FieldName, keyof ResolvedConfig]>;
 
-/** The sky names what is hidden rather than what is shown, since by
- *  default almost everything is. */
-function skySummary(c: ResolvedConfig, t: Translate): string {
+/** The sky names the default layers that are hidden and the extras that
+ *  are shown: whatever differs from a fresh card. */
+function skySummary(c: ResolvedConfig, t: Translate, lang: string): string {
   const hidden = SKY_LAYERS.filter(([, key]) => !c[key]).map(([name]) =>
     t(`editor.summary.${name}`),
   );
+  const extras = SKY_EXTRAS.filter(([, key]) => c[key]).map(([word]) =>
+    t(`editor.summary.${word}`),
+  );
+  const everything = hidden.length === 0 && extras.length === SKY_EXTRAS.length;
   const [a = "", b = ""] = hidden;
   let layers: string;
-  if (hidden.length === 0) layers = t("editor.summary.all_shown");
+  if (everything) layers = t("editor.summary.all_shown");
+  else if (hidden.length === 0) layers = t("editor.summary.defaults_shown");
   else if (hidden.length === 1) layers = t("editor.summary.without_one", { a });
   else if (hidden.length === 2) layers = t("editor.summary.without_two", { a, b });
   else
@@ -213,7 +236,13 @@ function skySummary(c: ResolvedConfig, t: Translate): string {
       n: SKY_LAYERS.length - hidden.length,
       total: SKY_LAYERS.length,
     });
-  return c.ambientMotion ? layers : `${layers} · ${t("editor.summary.sun_still")}`;
+  const parts = [layers];
+  if (extras.length > 0 && !everything) {
+    const list = new Intl.ListFormat(lang, { type: "conjunction" }).format(extras);
+    parts.push(t("editor.summary.with_extras", { list }));
+  }
+  if (!c.ambientMotion) parts.push(t("editor.summary.sun_still"));
+  return parts.join(" · ");
 }
 
 /**
@@ -229,7 +258,7 @@ export function groupSummary(
   const c = resolved(config);
   switch (id) {
     case "sky":
-      return skySummary(c, t);
+      return skySummary(c, t, lang);
     case "view": {
       const tilt =
         c.tilt === DEFAULTS.tilt

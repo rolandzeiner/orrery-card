@@ -6,8 +6,10 @@ import {
   GeoVector,
   HelioVector,
   Illumination,
+  JupiterMoons,
   MakeTime,
   MoonPhase,
+  ObserverVector,
   RotateVector,
   Rotation_EQJ_ECL,
   Vector,
@@ -15,6 +17,7 @@ import {
 
 import { DAY_MS } from "../const";
 import type { PlanetDef } from "./bodies";
+import { observerAt, type HomeLocation } from "./home";
 
 /** Ecliptic (J2000) cartesian coordinates in AU. x points at the March
  *  equinox, z at the ecliptic north pole. */
@@ -34,6 +37,7 @@ export function helio(body: Body, ms: number): Vec3 {
 }
 
 const length = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
+const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
 function unit(v: Vec3): Vec3 {
   const l = length(v) || 1;
@@ -165,13 +169,33 @@ export interface SkySnapshot {
   moonPhase: number;
   /** Unit vector from Earth towards the Moon, ecliptic. */
   moonDir: Vec3;
+  /** Unit vector from Earth's centre to the zenith of the HA home,
+   *  ecliptic. Null unless asked for. */
+  homeDir: Vec3 | null;
+  /** The Sun is above the home's horizon (geometric, no refraction). */
+  homeDay: boolean;
+  /** Unit vectors from Jupiter to its four big moons, ecliptic, in
+   *  JUPITER_MOONS order. Null unless asked for. */
+  jupiterMoons: ReadonlyArray<Vec3> | null;
 }
 
-export function skySnapshot(t: number, bodies: ReadonlyArray<Body>): SkySnapshot {
+/** What a snapshot computes beyond the planets, when a layer needs it. */
+export interface SnapshotExtras {
+  home?: HomeLocation | null;
+  jupiterMoons?: boolean;
+}
+
+export function skySnapshot(
+  t: number,
+  bodies: ReadonlyArray<Body>,
+  extras: SnapshotExtras = {},
+): SkySnapshot {
   const date = new Date(t);
   const pos = new Map<Body, Vec3>();
   for (const b of bodies) pos.set(b, helio(b, t));
   const earth = pos.get(Body.Earth) ?? helio(Body.Earth, t);
+  const homeDir = extras.home ? homeZenith(t, extras.home) : null;
+  const sunDir: Vec3 = [-earth[0], -earth[1], -earth[2]];
   return {
     t,
     pos,
@@ -181,7 +205,41 @@ export function skySnapshot(t: number, bodies: ReadonlyArray<Body>): SkySnapshot
     moonLit: Illumination(Body.Moon, date).phase_fraction,
     moonPhase: MoonPhase(date),
     moonDir: unit(toEcliptic(GeoMoon(date))),
+    homeDir,
+    homeDay: homeDir !== null && dot(homeDir, sunDir) > 0,
+    jupiterMoons: extras.jupiterMoons ? jupiterMoonDirs(t) : null,
   };
+}
+
+/** Unit vector from Earth's centre towards the zenith of `home`, ecliptic:
+ *  the sky straight above it. Geocentric, so it differs from the true
+ *  vertical by up to 0.2°, which no needle on the card can show. */
+export function homeZenith(t: number, home: HomeLocation): Vec3 {
+  return unit(toEcliptic(ObserverVector(new Date(t), observerAt(home), false)));
+}
+
+export interface JupiterMoonDef {
+  key: "io" | "europa" | "ganymede" | "callisto";
+  /** Semi-major axis, km. */
+  km: number;
+  /** Orbital period, days. */
+  period: number;
+}
+
+export const JUPITER_MOONS: ReadonlyArray<JupiterMoonDef> = [
+  { key: "io", km: 421_700, period: 1.769 },
+  { key: "europa", km: 671_034, period: 3.551 },
+  { key: "ganymede", km: 1_070_412, period: 7.155 },
+  { key: "callisto", km: 1_882_709, period: 16.689 },
+];
+
+/** Unit vectors from Jupiter to Io, Europa, Ganymede and Callisto,
+ *  ecliptic. ~20 µs per call. */
+export function jupiterMoonDirs(t: number): Vec3[] {
+  const m = JupiterMoons(new Date(t));
+  return [m.io, m.europa, m.ganymede, m.callisto].map((s) =>
+    unit(toEcliptic(new Vector(s.x, s.y, s.z, s.t))),
+  );
 }
 
 export interface PlanetDetails {
@@ -203,11 +261,11 @@ export function planetDetails(body: Body, t: number): PlanetDetails {
 /** Light travel time for a distance in AU, in seconds. */
 export const lightSeconds = (au: number): number => au * 499.004784;
 
-/** Saturn's north pole (RA 40.589°, Dec 83.537°, J2000), as an ecliptic
- *  unit vector. Its rings lie in the plane perpendicular to it. */
-export const SATURN_POLE: Vec3 = (() => {
-  const ra = (40.589 * Math.PI) / 180;
-  const dec = (83.537 * Math.PI) / 180;
+/** A north pole given as J2000 RA and Dec in degrees, as an ecliptic unit
+ *  vector. */
+function pole(raDeg: number, decDeg: number): Vec3 {
+  const ra = (raDeg * Math.PI) / 180;
+  const dec = (decDeg * Math.PI) / 180;
   const v = new Vector(
     Math.cos(dec) * Math.cos(ra),
     Math.cos(dec) * Math.sin(ra),
@@ -215,4 +273,12 @@ export const SATURN_POLE: Vec3 = (() => {
     MakeTime(new Date(J2000)),
   );
   return unit(toEcliptic(v));
-})();
+}
+
+/** Saturn's north pole (RA 40.589°, Dec 83.537°). Its rings lie in the
+ *  plane perpendicular to it. */
+export const SATURN_POLE: Vec3 = pole(40.589, 83.537);
+
+/** Jupiter's north pole (RA 268.057°, Dec 64.495°, IAU). Its four big
+ *  moons orbit within half a degree of its equator. */
+export const JUPITER_POLE: Vec3 = pole(268.057, 64.495);

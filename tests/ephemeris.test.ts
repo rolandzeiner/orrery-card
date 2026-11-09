@@ -1,9 +1,12 @@
-import { Body } from "astronomy-engine";
+import { Body, Equator, Horizon, Observer } from "astronomy-engine";
 import { describe, expect, it } from "vite-plus/test";
 
 import { PLANET_BY_KEY, PLUTO } from "../src/astro/bodies";
 import {
   helio,
+  homeZenith,
+  JUPITER_POLE,
+  jupiterMoonDirs,
   makeTicks,
   OrbitCache,
   orbitIndex,
@@ -129,5 +132,47 @@ describe("readouts", () => {
     expect(mars.constellation).toBe("Cancer");
     expect(mars.earthAu).toBeGreaterThan(1.5);
     expect(mars.earthAu).toBeLessThan(1.9);
+  });
+});
+
+describe("home and Jupiter's moons", () => {
+  const VIENNA = { latitude: 48.2082, longitude: 16.3738, elevation: 190 };
+  const dot = (a: readonly number[], b: readonly number[]): number =>
+    a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
+
+  it("points the home zenith where the Sun's altitude says it should", () => {
+    const observer = new Observer(VIENNA.latitude, VIENNA.longitude, VIENNA.elevation);
+    for (const t of [
+      Date.UTC(2026, 5, 21, 10, 30),
+      Date.UTC(2026, 11, 21, 15),
+      Date.UTC(2027, 2, 1, 2),
+    ]) {
+      const earth = helio(Body.Earth, t);
+      const r = Math.hypot(...earth);
+      const sun = earth.map((c) => -c / r);
+      const altitude = (Math.asin(dot(homeZenith(t, VIENNA), sun)) * 180) / Math.PI;
+      const eq = Equator(Body.Sun, new Date(t), observer, true, true);
+      // Within half a degree: the zenith is geocentric, HA's latitude geodetic.
+      expect(altitude).toBeCloseTo(Horizon(new Date(t), observer, eq.ra, eq.dec).altitude, 0);
+    }
+  });
+
+  it("knows day from night at home, and only works it out when asked", () => {
+    const noon = skySnapshot(Date.UTC(2026, 8, 26, 11), [Body.Earth], { home: VIENNA });
+    const night = skySnapshot(Date.UTC(2026, 8, 26, 23), [Body.Earth], { home: VIENNA });
+    expect(noon.homeDay).toBe(true);
+    expect(night.homeDay).toBe(false);
+    const plain = skySnapshot(Date.UTC(2026, 8, 26, 11), [Body.Earth]);
+    expect(plain.homeDir).toBeNull();
+    expect(plain.jupiterMoons).toBeNull();
+  });
+
+  it("puts the four big moons in Jupiter's equatorial plane", () => {
+    const dirs = jupiterMoonDirs(Date.UTC(2026, 8, 26));
+    expect(dirs).toHaveLength(4);
+    for (const d of dirs) {
+      expect(Math.hypot(...d)).toBeCloseTo(1, 6);
+      expect(Math.abs(dot(d, JUPITER_POLE))).toBeLessThan(0.03);
+    }
   });
 });

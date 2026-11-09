@@ -3,7 +3,15 @@ import { customElement, property, query, state } from "lit/decorators.js";
 import { classMap } from "lit/directives/class-map.js";
 
 import { PLANET_BY_KEY, type PlanetKey } from "./astro/bodies";
+import {
+  homeView,
+  nextEclipse,
+  previousEclipse,
+  type Eclipse,
+  type HomeView,
+} from "./astro/eclipses";
 import { helio, planetDetails } from "./astro/ephemeris";
+import { resolveHome } from "./astro/home";
 import { DEFAULTS, resolveConfig } from "./config";
 import { CARD_NAME, CARD_TAG, CARD_VERSION } from "./const";
 import "./editor";
@@ -46,6 +54,23 @@ const LIVE_TICK_MS = 15_000;
 const PALETTE_RETRY_MS = 250;
 const PALETTE_RETRY_LIMIT = 20;
 
+/** The eclipse the card jumped to, and how it looks from home (null
+ *  when HA has no home location). */
+interface EclipseStop {
+  event: Eclipse;
+  home: HomeView | null;
+}
+
+/** Splits a translated sentence on its `{name}` slot, so the name can be
+ *  emphasised without putting markup into the translation. */
+function aroundName(
+  translate: (vars: Record<string, string>) => string,
+): readonly [string, string] {
+  const MARK = "\u0000";
+  const [before = "", after = ""] = translate({ name: MARK }).split(MARK);
+  return [before, after];
+}
+
 @customElement(CARD_TAG)
 export class OrreryCard extends LitElement {
   static override styles = cardStyles;
@@ -64,6 +89,8 @@ export class OrreryCard extends LitElement {
   @state() private _selected: PlanetKey | null = null;
   @state() private _speed: SpeedKey = DEFAULT_SPEED;
   @state() private _toast = false;
+  /** Set by an eclipse jump; any other move in time clears it. */
+  @state() private _eclipse: EclipseStop | null = null;
   /** Bumped when the date input or readout needs re-rendering. */
   @state() private _uiRevision = 0;
 
@@ -105,6 +132,7 @@ export class OrreryCard extends LitElement {
     this._config = next;
     // A hidden body can't stay selected: the readout would keep describing it.
     if (!next.showPluto && this._selected === "pluto") this._selected = null;
+    if (!next.showEclipses) this._eclipse = null;
     if (next.scale !== prev.scale || next.tilt !== prev.tilt || next.view !== prev.view) {
       this._applyOptions();
       this._cam.zoom = this._openingZoom();
@@ -189,6 +217,7 @@ export class OrreryCard extends LitElement {
     const canvas = this._canvas;
     if (!canvas) return;
     this._renderer = new OrreryRenderer(canvas, this._fmt());
+    this._renderer.setHome(resolveHome(this.hass));
     this._applyOptions();
     const earth = helio(PLANET_BY_KEY.earth.body, this._t);
     this._cam.az = azimuthFacing(Math.atan2(earth[1], earth[0]));
@@ -202,6 +231,7 @@ export class OrreryCard extends LitElement {
     // The formatter depends on hass (language, zone, clock); swap it in.
     if (this._renderer && changed.has("hass")) {
       this._renderer.setTexts(this._fmt());
+      this._renderer.setHome(resolveHome(this.hass));
       this._requestDraw();
     }
   }
@@ -314,6 +344,7 @@ export class OrreryCard extends LitElement {
     this._dirty = false;
     this._lastDraw = ts;
     const fmt = this._fmt();
+    const eclipse = this._eclipse?.event;
     renderer.draw({
       t: this._t,
       ts,
@@ -324,7 +355,10 @@ export class OrreryCard extends LitElement {
         playing: this._playing,
         speed: this._speed,
         now: Date.now(),
+        ...(eclipse ? { eclipse } : {}),
       }),
+      rate: this._playing ? speedDays(this._speed) : 0,
+      eclipse: eclipse?.body ?? null,
     });
     this._syncUi(ts, fmt);
   }
@@ -354,6 +388,8 @@ export class OrreryCard extends LitElement {
       showBelt: c.showBelt,
       showMoon: c.showMoon,
       showPluto: c.showPluto,
+      showJupiterMoons: c.showJupiterMoons,
+      showHome: c.showHome,
       ambient: this._ambient(),
     };
   }
@@ -381,6 +417,9 @@ export class OrreryCard extends LitElement {
   private _hassFingerprint(): string {
     const h = this.hass;
     return [
+      h?.config?.latitude,
+      h?.config?.longitude,
+      h?.config?.elevation,
       resolveLang(h),
       resolveTimeZone(h),
       resolveHour12(h),
@@ -490,13 +529,17 @@ export class OrreryCard extends LitElement {
 
   private readonly _togglePlay = (): void => {
     this._playing = !this._playing;
-    if (this._playing) this._live = false;
+    if (this._playing) {
+      this._live = false;
+      this._eclipse = null;
+    }
     this._requestDraw();
   };
 
   private readonly _goNow = (): void => {
     this._playing = false;
     this._live = true;
+    this._eclipse = null;
     this._t = OrreryCard._liveTime();
     this._requestDraw();
   };
@@ -504,6 +547,22 @@ export class OrreryCard extends LitElement {
   private _step(days: number, months: number): void {
     this._t = stepTime(this._t, days, months);
     this._live = false;
+    this._eclipse = null;
+    this._requestDraw();
+  }
+
+  /** Jump to the peak of the previous or next eclipse of either kind.
+   *  Past either end of the travel range it does nothing. */
+  private _jumpEclipse(direction: -1 | 1): void {
+    const event = direction < 0 ? previousEclipse(this._t) : nextEclipse(this._t);
+    if (!event) return;
+    const home = resolveHome(this.hass);
+    this._t = event.peak;
+    this._live = false;
+    this._playing = false;
+    // The readout describes the eclipse now, not a planet picked before.
+    this._selected = null;
+    this._eclipse = { event, home: home ? homeView(event, home) : null };
     this._requestDraw();
   }
 
@@ -513,6 +572,7 @@ export class OrreryCard extends LitElement {
     this._t = t;
     this._live = false;
     this._playing = false;
+    this._eclipse = null;
     this._requestDraw();
   };
 
@@ -576,29 +636,36 @@ export class OrreryCard extends LitElement {
 
   private _readout(fmt: CardFormat): TemplateResult | string {
     const key = this._selected;
-    if (!key) return fmt.t("card.readout_idle");
+    if (!key) {
+      return this._eclipse ? this._eclipseReadout(fmt, this._eclipse) : fmt.t("card.readout_idle");
+    }
     const def = PLANET_BY_KEY[key];
     const details = planetDetails(def.body, this._t);
     const name = fmt.planetName(key);
-    // Split the sentence on the name so it can be emphasised without
-    // putting markup into the translation.
-    const MARK = "\u0000";
-    const text =
-      key === "earth"
-        ? fmt.t("card.readout_earth", {
-            sun: fmt.au(details.sunAu, 4),
-            light: fmt.lightTime(details.sunAu),
-          })
-        : fmt.t("card.readout_planet", {
-            name: MARK,
-            constellation: details.constellation,
-            earth: fmt.au(details.earthAu),
-            sun: fmt.au(details.sunAu),
-            light: fmt.lightTime(details.earthAu),
-          });
-    if (key === "earth") return html`<strong class="home">${name}</strong> · ${text}`;
-    const [before = "", after = ""] = text.split(MARK);
+    if (key === "earth") {
+      const text = fmt.t("card.readout_earth", {
+        sun: fmt.au(details.sunAu, 4),
+        light: fmt.lightTime(details.sunAu),
+      });
+      return html`<strong class="home">${name}</strong> · ${text}`;
+    }
+    const [before, after] = aroundName((vars) =>
+      fmt.t("card.readout_planet", {
+        ...vars,
+        constellation: details.constellation,
+        earth: fmt.au(details.earthAu),
+        sun: fmt.au(details.sunAu),
+        light: fmt.lightTime(details.earthAu),
+      }),
+    );
     return html`${before}<strong>${name}</strong>${after}`;
+  }
+
+  /** "Total solar eclipse, at its deepest. From your home, …" */
+  private _eclipseReadout(fmt: CardFormat, stop: EclipseStop): TemplateResult {
+    const [before, after] = aroundName((vars) => fmt.t("card.readout_eclipse", vars));
+    const home = stop.home ? ` ${fmt.eclipseFromHome(stop.event, stop.home)}` : "";
+    return html`${before}<strong>${fmt.eclipseName(stop.event)}</strong>${after}${home}`;
   }
 
   private _iconButton(label: string, icon: string, onClick: () => void): TemplateResult {
@@ -617,6 +684,18 @@ export class OrreryCard extends LitElement {
         ${this._iconButton(fmt.t("controls.view"), "mdi:rotate-3d-variant", () => this._cycleView())}
         ${this._iconButton(fmt.t("controls.zoom_out"), "mdi:minus", () => this._setZoom(this._cam.zoom / 1.3))}
         ${this._iconButton(fmt.t("controls.zoom_in"), "mdi:plus", () => this._setZoom(this._cam.zoom * 1.3))}
+      </div>
+    `;
+  }
+
+  /** Previous / next eclipse: two round buttons around a quiet label, the
+   *  same ghost controls as the rest of the line. */
+  private _renderEclipseStepper(fmt: CardFormat): TemplateResult {
+    return html`
+      <div class="stepper" role="group" aria-label=${fmt.t("controls.eclipse_group")}>
+        ${this._iconButton(fmt.t("controls.previous_eclipse"), "mdi:chevron-left", () => this._jumpEclipse(-1))}
+        <span class="stepper-label" aria-hidden="true">${fmt.t("controls.eclipse")}</span>
+        ${this._iconButton(fmt.t("controls.next_eclipse"), "mdi:chevron-right", () => this._jumpEclipse(1))}
       </div>
     `;
   }
@@ -663,6 +742,7 @@ export class OrreryCard extends LitElement {
               @change=${this._onDateInput}
             />
           </label>
+          ${this._config.showEclipses ? this._renderEclipseStepper(fmt) : nothing}
           <button
             type="button"
             class="now"

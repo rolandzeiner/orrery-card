@@ -41,6 +41,7 @@ interface CardInternals extends HTMLElement {
   _live: boolean;
   _playing: boolean;
   _selected: string | null;
+  _eclipse: { event: { body: string; type: string; peak: number } } | null;
   _speed: string;
   _cam: { az: number; el: number; zoom: number };
   _renderer?: {
@@ -196,6 +197,60 @@ describe("time controls", () => {
     const card = await mount({ show_controls: false });
     expect(card.shadowRoot?.querySelector(".controls")).toBeNull();
     expect(card.shadowRoot?.querySelector(".viewbar")).toBeNull();
+  });
+});
+
+describe("eclipses", () => {
+  const hassHome = { ...hassEn, config: { latitude: 48.2082, longitude: 16.3738, elevation: 190 } };
+
+  it("adds the eclipse buttons only when they're switched on", async () => {
+    const off = await mount();
+    expect(off.shadowRoot?.querySelector(".stepper")).toBeNull();
+    const on = await mount({ show_eclipses: true });
+    expect(button(on, "Previous eclipse")).toBeDefined();
+    expect(button(on, "Next eclipse")).toBeDefined();
+  });
+
+  it("jumps to the next eclipse and says how it looks from home", async () => {
+    const card = await mount({ show_eclipses: true }, hassHome);
+    card._t = Date.UTC(2027, 6, 25);
+    card._selected = "mars";
+    button(card, "Next eclipse").click();
+    await card.updateComplete;
+    expect(card._eclipse?.event).toMatchObject({ body: "solar", type: "total" });
+    expect(new Date(card._t).toISOString()).toMatch(/^2027-08-02T10:0/);
+    expect(card._live).toBe(false);
+    expect(card._selected).toBeNull();
+    expect($(card, ".readout").textContent).toMatch(
+      /Total solar eclipse, at its deepest\. From your home, the Moon covers up to 4\d% of the Sun\./,
+    );
+  });
+
+  it("leaves the home sentence out without a home location", async () => {
+    const card = await mount({ show_eclipses: true });
+    card._t = Date.UTC(2027, 6, 25);
+    button(card, "Next eclipse").click();
+    await card.updateComplete;
+    expect($(card, ".readout").textContent?.trim()).toBe("Total solar eclipse, at its deepest.");
+  });
+
+  it("steps back, and any other move in time leaves the eclipse", async () => {
+    const card = await mount({ show_eclipses: true });
+    card._t = Date.UTC(2026, 7, 20);
+    button(card, "Previous eclipse").click();
+    expect(card._eclipse?.event.body).toBe("solar");
+    button(card, "Forward one day").click();
+    await card.updateComplete;
+    expect(card._eclipse).toBeNull();
+    expect($(card, ".readout").textContent).toMatch(/Tap a planet/);
+  });
+
+  it("forgets the eclipse when the buttons are switched off", async () => {
+    const card = await mount({ show_eclipses: true });
+    button(card, "Next eclipse").click();
+    expect(card._eclipse).not.toBeNull();
+    card.setConfig({ type: "custom:orrery-card", ambient_motion: false });
+    expect(card._eclipse).toBeNull();
   });
 });
 

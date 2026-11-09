@@ -22,6 +22,14 @@ describe("resolveConfig", () => {
     expect(() => resolveConfig({ show_pluto: "yes" })).toThrow(/"show_pluto"/);
   });
 
+  it("leaves Jupiter's moons, the home needle and the eclipse buttons off unless asked for", () => {
+    const cfg = resolveConfig({});
+    expect([cfg.showJupiterMoons, cfg.showHome, cfg.showEclipses]).toEqual([false, false, false]);
+    const on = resolveConfig({ show_jupiter_moons: true, show_home: true, show_eclipses: true });
+    expect([on.showJupiterMoons, on.showHome, on.showEclipses]).toEqual([true, true, true]);
+    expect(() => resolveConfig({ show_home: "yes" })).toThrow(/"show_home"/);
+  });
+
   it("accepts a numeric tilt given as text, as the YAML editor can produce", () => {
     expect(resolveConfig({ tilt: "3.5" }).tilt).toBe(3.5);
   });
