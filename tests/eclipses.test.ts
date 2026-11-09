@@ -41,6 +41,23 @@ describe("stepping through eclipses", () => {
     expect(Math.abs(feb.peak - FEB_17)).toBeLessThan(2 * MINUTE);
   });
 
+  it("never stays on the eclipse it stands on when stepping forward", () => {
+    // The engine searches from the new or full moon, and about a third of
+    // eclipses peak before it: these two once came back to themselves.
+    for (const peak of [
+      Date.UTC(1800, 3, 24, 0, 23, 31, 10),
+      Date.UTC(1802, 2, 19, 11, 15, 0, 682),
+    ])
+      expect(must(nextEclipse(peak)).peak).toBeGreaterThan(peak + MINUTE);
+    let t = Date.UTC(2026, 0, 1);
+    for (let i = 0; i < 40; i++) {
+      const e = must(nextEclipse(t));
+      expect(e.peak).toBeGreaterThan(t);
+      expect(must(previousEclipse(e.peak)).peak).toBeLessThan(e.peak);
+      t = e.peak;
+    }
+  });
+
   it("goes forward and back to the same eclipse", () => {
     const e = must(nextEclipse(Date.UTC(2031, 3, 1)));
     const back = must(previousEclipse(must(nextEclipse(e.peak)).peak));

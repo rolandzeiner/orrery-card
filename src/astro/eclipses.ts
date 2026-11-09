@@ -94,11 +94,21 @@ function lunar(e: {
 /** The first eclipse of either kind after `t`, or null past the range the
  *  card can show. */
 export function nextEclipse(t: number): Eclipse | null {
-  const from = t + NUDGE;
-  const a = SOLAR.first(from);
-  const b = LUNAR.first(from);
+  const after = t + NUDGE;
+  const a = firstAfter(SOLAR, after);
+  const b = firstAfter(LUNAR, after);
   const e = a.peak <= b.peak ? a : b;
   return e.peak <= MAX_TIME ? e : null;
+}
+
+/** The first eclipse in `series` that peaks after `after`. The engine
+ *  searches from the first new or full moon after the time it's given,
+ *  but an eclipse can peak before that moment: searching from just past
+ *  a peak finds the same eclipse again, so step on until it is later. */
+function firstAfter(series: Series, after: number): Eclipse {
+  let e = series.first(after);
+  while (e.peak <= after) e = series.next(e);
+  return e;
 }
 
 /** The last eclipse of either kind before `t`, or null before the range
