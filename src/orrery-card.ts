@@ -18,6 +18,7 @@ import "./editor";
 import {
   CardFormat,
   DEFAULT_SPEED,
+  resolveDateOrder,
   resolveHour12,
   resolveTimeZone,
   SPEEDS,
@@ -406,9 +407,10 @@ export class OrreryCard extends LitElement {
     const lang = resolveLang(this.hass);
     const tz = resolveTimeZone(this.hass);
     const hour12 = resolveHour12(this.hass);
-    const key = `${lang}|${tz}|${hour12}`;
+    const dateOrder = resolveDateOrder(this.hass);
+    const key = `${lang}|${tz}|${hour12}|${dateOrder}`;
     if (!this._format || key !== this._formatKey) {
-      this._format = new CardFormat(lang, tz, hour12);
+      this._format = new CardFormat(lang, tz, hour12, dateOrder);
       this._formatKey = key;
     }
     return this._format;
@@ -423,6 +425,7 @@ export class OrreryCard extends LitElement {
       resolveLang(h),
       resolveTimeZone(h),
       resolveHour12(h),
+      resolveDateOrder(h),
       h?.themes?.darkMode,
       h?.themes?.theme,
       h?.selectedTheme?.theme,
@@ -616,7 +619,7 @@ export class OrreryCard extends LitElement {
           <canvas
             tabindex="0"
             role="img"
-            aria-label=${fmt.t("card.canvas_label", { date: fmt.isoDate(this._t) })}
+            aria-label=${fmt.t("card.canvas_label", { date: fmt.spokenDate(this._t) })}
             @pointerdown=${this._onPointerDown}
             @pointermove=${this._onPointerMove}
             @pointerup=${this._onPointerUp}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { CardFormat, resolveHour12, resolveTimeZone } from "../src/format";
+import { CardFormat, resolveDateOrder, resolveHour12, resolveTimeZone } from "../src/format";
 
 const t = Date.UTC(2026, 8, 26, 18, 5);
 const base = { live: false, playing: false, speed: "month" as const, now: t };
@@ -8,22 +8,40 @@ const base = { live: false, playing: false, speed: "month" as const, now: t };
 describe("CardFormat.dateLine", () => {
   it("writes the English date line", () => {
     const line = new CardFormat("en", "UTC", false).dateLine(t, { ...base, live: true });
-    expect(line.big).toBe("26 SEP 2026");
+    expect(line.big).toBe("SEP 26, 2026");
     expect(line.sub).toBe("SAT · 18:05");
     expect(line.tag).toBe("LIVE");
     expect(line.tagIsLive).toBe(true);
     expect(line.monthKey).toBe(2026 * 12 + 8);
   });
 
-  it("writes the German date line without abbreviation dots", () => {
+  it("writes the German date line in German order, without the month's dot", () => {
     const line = new CardFormat("de", "UTC", undefined).dateLine(t, base);
-    expect(line.big).toMatch(/^26 SEPT? 2026$/);
+    expect(line.big).toMatch(/^26\. SEPT? 2026$/);
     expect(line.sub).toBe("SA · 18:05");
   });
 
-  it("writes the Chinese and Japanese date year first", () => {
-    expect(new CardFormat("ja", "UTC", undefined).dateLine(t, base).big).toBe("2026年9月26日");
-    expect(new CardFormat("zh-Hans", "UTC", undefined).dateLine(t, base).big).toBe("2026年9月26日");
+  it("writes the date the way the language does", () => {
+    const big = (lang: string): string =>
+      new CardFormat(lang, "UTC", undefined).dateLine(t, base).big;
+    expect(big("en-GB")).toMatch(/^26 SEPT? 2026$/);
+    expect(big("fi")).toBe("26.9.2026");
+    expect(big("ja")).toBe("2026年9月26日");
+    expect(big("zh-Hans")).toBe("2026年9月26日");
+    expect(big("ko")).toBe("2026년 9월 26일");
+  });
+
+  it("follows the date order fixed in the HA profile", () => {
+    const big = (order: "DMY" | "MDY" | "YMD"): string =>
+      new CardFormat("en", "UTC", false, order).dateLine(t, base).big;
+    expect(big("DMY")).toBe("26 SEP 2026");
+    expect(big("MDY")).toBe("SEP 26 2026");
+    expect(big("YMD")).toBe("2026 SEP 26");
+  });
+
+  it("writes the date out for screen readers", () => {
+    expect(new CardFormat("en", "UTC", false).spokenDate(t)).toBe("September 26, 2026");
+    expect(new CardFormat("de", "UTC", false).spokenDate(t)).toBe("26. September 2026");
   });
 
   it("shows the playback speed while playing, and the offset from now when paused", () => {
@@ -66,5 +84,12 @@ describe("profile settings", () => {
     expect(resolveHour12({ locale: { time_format: "12" } })).toBe(true);
     expect(resolveHour12({ locale: { time_format: "24" } })).toBe(false);
     expect(resolveHour12({ locale: { time_format: "language" } })).toBeUndefined();
+  });
+
+  it("maps the date-format setting, defaulting to the language's order", () => {
+    expect(resolveDateOrder({ locale: { date_format: "MDY" } })).toBe("MDY");
+    expect(resolveDateOrder({ locale: { date_format: "system" } })).toBe("system");
+    expect(resolveDateOrder({ locale: { date_format: "bogus" } })).toBe("language");
+    expect(resolveDateOrder(undefined)).toBe("language");
   });
 });

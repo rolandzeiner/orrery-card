@@ -88,7 +88,7 @@ type: custom:orrery-card
 | `show_eclipses` | `false` | Buttons next to the date that jump to the previous or next solar or lunar eclipse. Needs `show_controls`. |
 | `ambient_motion` | `true` | Slowly rotates the Sun. Turn it off to save power on a wall tablet. It's always off if your device asks for reduced motion. |
 
-The card follows your Home Assistant language: English, German, French, Italian, Spanish, Portuguese, Dutch, Swedish, Danish, Norwegian (Bokmål, also used for Nynorsk), Finnish, Chinese (Simplified) or Japanese. Any other language falls back to English.
+The card follows your Home Assistant language: English, German, French, Italian, Spanish, Portuguese, Dutch, Swedish, Danish, Norwegian (Bokmål, also used for Nynorsk), Finnish, Chinese (Simplified) or Japanese. Any other language falls back to English. Dates are written the way your language writes them (FEB 6, 2027 in US English, 6. FEB 2027 in German, 2027年2月6日 in Japanese), or in the order set under Date format in your Home Assistant profile. Times follow the profile's 12/24-hour setting.
 
 ### Colour themes
 

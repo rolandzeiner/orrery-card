@@ -6,6 +6,8 @@ export interface HomeAssistant {
     language?: string;
     /** "language" | "system" | "12" | "24" */
     time_format?: string;
+    /** "language" | "system" | "DMY" | "MDY" | "YMD" */
+    date_format?: string;
     /** "local" | "server" */
     time_zone?: string;
   } & Record<string, unknown>;

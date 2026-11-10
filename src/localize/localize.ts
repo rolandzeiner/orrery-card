@@ -58,7 +58,7 @@ function resolveTranslation(path: string, dictionary: Record<string, unknown>): 
 
 /** The bundled language for a BCP-47 tag: region and script dropped,
  *  aliases applied. "zh-Hant" → "zh", "nn-NO" → "nb". */
-export function baseLanguage(lang: string | undefined): string {
+function baseLanguage(lang: string | undefined): string {
   const code = (lang ?? "en").toLowerCase().split(/[-_]/)[0] || "en";
   return ALIASES[code] ?? code;
 }

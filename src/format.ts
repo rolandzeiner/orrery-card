@@ -2,7 +2,7 @@ import type { PlanetKey } from "./astro/bodies";
 import type { Eclipse, HomeView } from "./astro/eclipses";
 import { lightSeconds, type SkySnapshot } from "./astro/ephemeris";
 import { DAY_MS } from "./const";
-import { baseLanguage, localize } from "./localize/localize";
+import { localize } from "./localize/localize";
 import type { DateLine, GaugeReading, Texts } from "./render/renderer";
 import type { HomeAssistant } from "./types";
 
@@ -39,6 +39,23 @@ export function resolveTimeZone(hass: HomeAssistant | undefined): string | undef
   return undefined;
 }
 
+/** HA's date-format profile setting. "language" (the default) and "system"
+ *  take the order and separators from a locale; the other three fix the order. */
+export type DateOrder = "language" | "system" | "DMY" | "MDY" | "YMD";
+
+const FIXED_ORDERS = {
+  DMY: ["day", "month", "year"],
+  MDY: ["month", "day", "year"],
+  YMD: ["year", "month", "day"],
+} as const;
+
+export function resolveDateOrder(hass: HomeAssistant | undefined): DateOrder {
+  const pref = hass?.locale?.date_format;
+  return pref === "system" || pref === "DMY" || pref === "MDY" || pref === "YMD"
+    ? pref
+    : "language";
+}
+
 /** HA's 12/24-hour profile setting → Intl's hour12 (undefined = locale). */
 export function resolveHour12(hass: HomeAssistant | undefined): boolean | undefined {
   const pref = hass?.locale?.time_format;
@@ -47,12 +64,10 @@ export function resolveHour12(hass: HomeAssistant | undefined): boolean | undefi
   return undefined;
 }
 
-const YEAR_FIRST: ReadonlySet<string> = new Set(["zh", "ja"]);
-
 const clean = (s: string): string => s.replace(/\./g, "").toLocaleUpperCase();
 
-/** Everything the card writes, localised for one language, time zone and
- *  clock setting. Rebuilt only when one of those changes. */
+/** Everything the card writes, localised for one language, time zone, date
+ *  order and clock setting. Rebuilt only when one of those changes. */
 export class CardFormat implements Texts {
   private readonly months: string[];
   private readonly parts: Intl.DateTimeFormat;
@@ -62,13 +77,16 @@ export class CardFormat implements Texts {
   private readonly relative: Intl.RelativeTimeFormat;
   private readonly numbers = new Map<number, Intl.NumberFormat>();
   private readonly percent: Intl.NumberFormat;
-  /** Chinese and Japanese write the big date year first, as 2026年9月26日. */
-  private readonly yearFirst: boolean;
+  private readonly date: Intl.DateTimeFormat;
+  private readonly spoken: Intl.DateTimeFormat;
+  /** Where dates take their order and words from; undefined is the browser's locale. */
+  private readonly dateLocale: string | undefined;
 
   constructor(
     readonly lang: string,
     readonly timeZone: string | undefined,
     hour12: boolean | undefined,
+    private readonly dateOrder: DateOrder = "language",
   ) {
     const tz = timeZone ? { timeZone } : {};
     const monthFmt = new Intl.DateTimeFormat(lang, { month: "short", timeZone: "UTC" });
@@ -96,7 +114,15 @@ export class CardFormat implements Texts {
     });
     this.relative = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
     this.percent = new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 });
-    this.yearFirst = YEAR_FIRST.has(baseLanguage(lang));
+    // "system" writes dates the way the browser's locale does, as HA itself does.
+    this.dateLocale = dateOrder === "system" ? undefined : lang;
+    this.date = new Intl.DateTimeFormat(this.dateLocale, {
+      ...tz,
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    this.spoken = new Intl.DateTimeFormat(this.dateLocale, { ...tz, dateStyle: "long" });
   }
 
   t(key: string, vars?: Record<string, string | number>): string {
@@ -143,6 +169,27 @@ export class CardFormat implements Texts {
   /** yyyy-mm-dd in the user's zone, for the date input. */
   isoDate(t: number): string {
     return this.iso.format(t);
+  }
+
+  /** The date written out, for the screen-reader label: "February 6, 2027". */
+  spokenDate(t: number): string {
+    return this.spoken.format(t);
+  }
+
+  /** The big date: the locale's own order, words and separators ("FEB 6,
+   *  2027", "6. FEB 2027", "6.2.2027", "2027年2月6日"), or the order fixed in
+   *  the HA profile, with the month as a word ("6 FEB 2027"). */
+  private bigDate(t: number, [year, month, day]: [number, number, number]): string {
+    const order = this.dateOrder;
+    if (order === "DMY" || order === "MDY" || order === "YMD") {
+      const values = { day: String(day), month: this.monthLabel(month - 1), year: String(year) };
+      return FIXED_ORDERS[order].map((part) => values[part]).join(" ");
+    }
+    return this.date
+      .formatToParts(t)
+      .map((part) => (part.type === "month" ? part.value.replace(/\./g, "") : part.value))
+      .join("")
+      .toLocaleUpperCase(this.dateLocale);
   }
 
   monthLabel(month: number): string {
@@ -214,9 +261,7 @@ export class CardFormat implements Texts {
           ? this.eclipseName(eclipse)
           : this.offset(t, state.now);
     return {
-      big: this.yearFirst
-        ? `${year}年${month}月${day}日`
-        : `${String(day).padStart(2, "0")} ${this.monthLabel(month - 1)} ${year}`,
+      big: this.bigDate(t, [year, month, day]),
       sub: `${clean(this.weekday.format(t))} · ${this.time.format(t)}`,
       tag: tag.toLocaleUpperCase(this.lang),
       ...(eclipse

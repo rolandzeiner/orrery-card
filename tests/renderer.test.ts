@@ -66,7 +66,7 @@ describe("OrreryRenderer.draw", () => {
     const { fake, renderer } = setup();
     renderer.draw(frame(CAM));
     const texts = fake.texts();
-    expect(texts).toContain("26 SEP 2026");
+    expect(texts).toContain("SEP 26, 2026");
     expect(texts).toContain("EARTH");
     expect(texts).toContain("NEPTUNE");
     expect(texts).toContain("SEP");
