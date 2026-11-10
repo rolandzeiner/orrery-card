@@ -21,6 +21,11 @@ describe("CardFormat.dateLine", () => {
     expect(line.sub).toBe("SA · 18:05");
   });
 
+  it("writes the Chinese and Japanese date year first", () => {
+    expect(new CardFormat("ja", "UTC", undefined).dateLine(t, base).big).toBe("2026年9月26日");
+    expect(new CardFormat("zh-Hans", "UTC", undefined).dateLine(t, base).big).toBe("2026年9月26日");
+  });
+
   it("shows the playback speed while playing, and the offset from now when paused", () => {
     const fmt = new CardFormat("en", "UTC", false);
     expect(fmt.dateLine(t, { ...base, playing: true, speed: "year" }).tag).toBe("1 YEAR/S");

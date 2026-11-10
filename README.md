@@ -36,7 +36,7 @@ The solar system in 3D for your Home Assistant dashboard: where the eight planet
 - **Time marks on every orbit**, in equal steps of time, so Mercury visibly speeds up near the Sun. Earth's orbit shows the months.
 - **Readouts and extras**: Moon phase and distances in the corners, the Moon, Jupiter's moons, the asteroid belt, Saturn's ring, Pluto, and where your home faces.
 - **Four colour themes on two backgrounds**: an always-dark sky, or your theme's card in light or dark mode.
-- **Light on wall tablets**: redraws only when something changes and pauses off screen. Works by keyboard and screen reader, in English and German.
+- **Light on wall tablets**: redraws only when something changes and pauses off screen. Works by keyboard and screen reader, in 13 languages.
 
 ## Installation
 
@@ -88,7 +88,7 @@ type: custom:orrery-card
 | `show_eclipses` | `false` | Buttons next to the date that jump to the previous or next solar or lunar eclipse. Needs `show_controls`. |
 | `ambient_motion` | `true` | Slowly rotates the Sun. Turn it off to save power on a wall tablet. It's always off if your device asks for reduced motion. |
 
-The card follows your Home Assistant language and falls back to English.
+The card follows your Home Assistant language: English, German, French, Italian, Spanish, Portuguese, Dutch, Swedish, Danish, Norwegian (Bokmål, also used for Nynorsk), Finnish, Chinese (Simplified) or Japanese. Any other language falls back to English.
 
 ### Colour themes
 

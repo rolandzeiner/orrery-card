@@ -3,3 +3,8 @@ declare module "*?raw" {
   const text: string;
   export default text;
 }
+
+/** Vite's eager `import.meta.glob`, for tests that walk a folder. */
+interface ImportMeta {
+  glob<T>(pattern: string, options: { eager: true; import: "default" }): Record<string, T>;
+}

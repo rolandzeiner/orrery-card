@@ -2,7 +2,7 @@ import type { PlanetKey } from "./astro/bodies";
 import type { Eclipse, HomeView } from "./astro/eclipses";
 import { lightSeconds, type SkySnapshot } from "./astro/ephemeris";
 import { DAY_MS } from "./const";
-import { localize } from "./localize/localize";
+import { baseLanguage, localize } from "./localize/localize";
 import type { DateLine, GaugeReading, Texts } from "./render/renderer";
 import type { HomeAssistant } from "./types";
 
@@ -47,6 +47,8 @@ export function resolveHour12(hass: HomeAssistant | undefined): boolean | undefi
   return undefined;
 }
 
+const YEAR_FIRST: ReadonlySet<string> = new Set(["zh", "ja"]);
+
 const clean = (s: string): string => s.replace(/\./g, "").toLocaleUpperCase();
 
 /** Everything the card writes, localised for one language, time zone and
@@ -60,6 +62,8 @@ export class CardFormat implements Texts {
   private readonly relative: Intl.RelativeTimeFormat;
   private readonly numbers = new Map<number, Intl.NumberFormat>();
   private readonly percent: Intl.NumberFormat;
+  /** Chinese and Japanese write the big date year first, as 2026年9月26日. */
+  private readonly yearFirst: boolean;
 
   constructor(
     readonly lang: string,
@@ -92,6 +96,7 @@ export class CardFormat implements Texts {
     });
     this.relative = new Intl.RelativeTimeFormat(lang, { numeric: "auto" });
     this.percent = new Intl.NumberFormat(lang, { style: "percent", maximumFractionDigits: 0 });
+    this.yearFirst = YEAR_FIRST.has(baseLanguage(lang));
   }
 
   t(key: string, vars?: Record<string, string | number>): string {
@@ -209,7 +214,9 @@ export class CardFormat implements Texts {
           ? this.eclipseName(eclipse)
           : this.offset(t, state.now);
     return {
-      big: `${String(day).padStart(2, "0")} ${this.monthLabel(month - 1)} ${year}`,
+      big: this.yearFirst
+        ? `${year}年${month}月${day}日`
+        : `${String(day).padStart(2, "0")} ${this.monthLabel(month - 1)} ${year}`,
       sub: `${clean(this.weekday.format(t))} · ${this.time.format(t)}`,
       tag: tag.toLocaleUpperCase(this.lang),
       ...(eclipse

@@ -137,10 +137,10 @@ grep -c "BSD-3-Clause" dist/orrery-card.js
 ## Translations
 
 1. Copy `src/localize/languages/en.json` to `<code>.json` and translate every value. Keep the `{placeholders}`.
-2. Import it in `src/localize/localize.ts` the way `en` and `de` are imported (`import * as sv from "./languages/sv.json"`) and add it to `LANGUAGE_REGISTRY`, which drives both the lookup and the editor's dropdown.
-3. Run `npm test`. It checks that every language has the same keys and placeholders as English.
+2. Import it in `src/localize/localize.ts` the way the others are imported (`import * as pl from "./languages/pl.json"`) and add it to `LANGUAGE_REGISTRY`. A code that should read another language instead of English goes in `ALIASES` (Nynorsk reads Bokmål).
+3. Run `npm test`. It checks that every file in `languages/` is registered and has the same keys and placeholders as English.
 
-Missing keys fall back to English, so a partial translation is still a useful PR. German uses du, never Sie. Month, weekday and number formats come from the browser's `Intl`, so they don't need translating. Constellation names stay in Latin, as the IAU names them.
+Missing keys fall back to English, so a partial translation is still a useful PR. German uses du, never Sie. Month, weekday and number formats come from the browser's `Intl`, so they don't need translating. A language that writes the date year first, like Chinese and Japanese, goes in `YEAR_FIRST` in `src/format.ts`. Constellation names stay in Latin, as the IAU names them.
 
 ## Where things are
 
